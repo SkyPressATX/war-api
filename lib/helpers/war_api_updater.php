@@ -97,7 +97,7 @@ class war_api_updater {
 
 		global $wp_filesystem;
 		$pluginFolder = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname( $this->slug );
-		$wp_filsystem->move( $result[ 'destination' ], $pluginFolder );
+		$wp_filesystem->move( $result[ 'destination' ], $pluginFolder );
 		$result[ 'destination' ] = $pluginFolder;
 
 		if( $wasActivated ) $active = activate_plugin( $this->slug );
