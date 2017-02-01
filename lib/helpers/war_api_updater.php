@@ -56,7 +56,7 @@ class war_api_updater {
 			$obj = (object)[
 				'slug' => $this->slug,
 				'new_version' => $this->gitHubAPIResult->tag_name,
-				'url' = $this->pluginData[ 'PluginURI' ],
+				'url' => $this->pluginData[ 'PluginURI' ],
 				'package' => $package
 			];
 
