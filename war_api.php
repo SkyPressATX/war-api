@@ -13,6 +13,7 @@ License: MIT
 require_once 'lib/config/war_config.php';
 require_once 'lib/helpers/war_api_abstract.php';
 require_once 'lib/endpoints/war_defaults.php';
+require_once 'lib/helpers/war_api_updater.php';
 
 class war_api_init {
 
@@ -93,3 +94,6 @@ class war_api_init {
 $war_api_init = new war_api_init;
 add_action('plugins_loaded', [ $war_api_init, 'init'], 9999);
 register_activation_hook( __FILE__, [ $war_api_init, 'war_auto_setup' ] );
+
+/** Updater Class only needs to be available in wp-admin **/
+if( is_admin() ) new war_api_updater( __FILE__, 'SkyPressATX', 'war-api' );
