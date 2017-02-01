@@ -42,7 +42,7 @@ class war_api_updater {
     }
 
     // Push in plugin version information to get the update notification
-    public function setTransitent( $transient ) {
+    public function setTransient( $transient ) {
         if( empty( $transient->checked ) ) return $transient;
 		$this->initPluginData();
 		$this->getRepoReleaseInfo();
