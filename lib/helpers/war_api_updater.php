@@ -1,6 +1,6 @@
 <?php
 
-class WPFDGitHubPluginUpdater {
+class war_api_updater {
 
     private $slug;
 
