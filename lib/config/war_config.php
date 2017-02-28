@@ -30,8 +30,8 @@ class war_config {
         $this->war_config = $war_config; //Save to class property
         $this->help = new war_global_helpers;
 
-        add_action( 'wp', [ $this, 'config_admin_toolbar' ] ); // Run config_admin_toolbar on after_setup_theme hook
-        add_action( 'wp_loaded', [ $this, 'config_set_user_roles' ] ); // Run config_set_user_roles on after_setup_theme hook
+        add_action( 'init', [ $this, 'config_admin_toolbar' ] ); // Run config_admin_toolbar
+        add_action( 'init', [ $this, 'config_set_user_roles' ] ); // Run config_set_user_roles
 
         if( $this->war_config[ 'api_prefix' ] !== $this->help->get_old_api_prefix() ){
             add_filter( 'rest_url_prefix', [ $this, 'config_set_api_prefix' ] );
@@ -78,7 +78,7 @@ class war_config {
 
     public function config_set_permalink( $war_config = [] ){
         if( ! empty( $war_config ) ) $this->war_config = $war_config;
-        if( empty( $this->war_config ) ) return new WP_Error( 'Empty war_config', 'The War Config Array is empty', [ 'status' => 405 ] );
+        if( empty( $this->war_config ) ) return new WP_Error( 'empty_war_config', 'The War Config Array is empty', [ 'status' => 405 ] );
         if( get_option( 'permalink_structure' ) !== $this->war_config[ 'permalink' ] ){
             global $wp_rewrite;
             $wp_rewrite->set_permalink_structure( $this->war_config[ 'permalink' ] );
@@ -90,7 +90,7 @@ class war_config {
 
     public function config_set_category_base( $war_config = [] ){
         if( ! empty( $war_config ) ) $this->war_config = $war_config;
-        if( empty( $this->war_config ) ) return new WP_Error( 'Empty war_config', 'The War Config Array is empty', [ 'status' => 405 ] );
+        if( empty( $this->war_config ) ) return new WP_Error( 'empty_war_config', 'The War Config Array is empty', [ 'status' => 405 ] );
         if( get_option( 'category_base' ) !== $this->war_config[ 'category_base' ] ){
             global $wp_rewrite;
             $wp_rewrite->set_category_base( $this->war_config[ 'category_base' ] );
@@ -111,7 +111,7 @@ class war_config {
      * This function does not return anything
      */
     public function config_localize(){
-        wp_register_script('war_site_details',null);
+        wp_register_script('war_site_details', null);
         $war_object = array(
             'warPath' => get_template_directory_uri(),
             'childPath' => get_stylesheet_directory_uri(),
@@ -121,6 +121,7 @@ class war_config {
             'api_prefix' => $this->war_config['api_prefix'],
             'api_namespace' => $this->war_config['namespace']
         );
+        $war_object = apply_filters( 'war_object', $war_object );
         wp_localize_script('war_site_details','warObject',$war_object);
         wp_enqueue_script('war_site_details');
     }
@@ -143,29 +144,34 @@ class war_config {
      * This function does not return anything
      */
     public function config_set_user_roles(){
-        /***** Define needed variables *****/
         global $wp_roles;
+
+        /** Retreive Previous Custom Roles **/
+        $old_roles = get_option( 'war_custom_user_roles' );
+        /** Remove any old custom roles that are no longer declared. Must perform this step before exiting **/
+        foreach( $old_roles as $or ){
+            if( ! in_array( $or, $this->war_config[ 'user_roles' ] ) ){
+                $wp_roles->remove_role( $or );
+                $remove_role = true;
+            }
+        }
+
+        if( empty( $this->war_config[ 'user_roles' ] ) || ! isset( $remove_role ) ) return; //Now we can leave knowing that things are cleaned up
+
+        /***** Define needed variables *****/
+        $custom_roles = array_reverse( $this->war_config['user_roles'] ); // Start at the end first
         $avail_roles = array_keys( $wp_roles->get_names() );
-        $roles = array_reverse( $this->war_config['user_roles'] ); // Start at the end first
-        $roles[] = 'administrator'; // Max level access
 
-        /***** Loop through current_roles and remove those not needed *****/
-        // foreach( $avail_roles as $role ){
-        //     if($role !== 'administrator' && ! in_array( $role, $roles ) ) $wp_roles->remove_role( $role );
-        // }
-
-        /***** Make sure the administrator can administrator *****/
-        // require_once '/var/www/your/wp-admin/includes/schema.php';
+        /** Temp solution to reset all default roles **/
+        // require_once ABSPATH . '/wp-admin/includes/schema.php';
         // if( function_exists( 'populate_roles' ) ) populate_roles();
-
-        // $wp_roles->add_cap( 'administrator', 'administrator' ); //Set this now
 
         /***** Process our custom user roles and groups *****/
         $processed_roles = array();
-        $role_size = sizeof($roles);
+        $role_size = sizeof( $custom_roles );
         for( $i=0; $i<$role_size; $i++ ){
-            $role = $roles[$i];
-            $rs = array_slice( $roles, 0, ($i+1) );
+            $role = $custom_roles[$i];
+            $rs = array_slice( $custom_roles, 0, ($i+1) );
             $name = ucfirst($role);
             $caps = $this->help->format_caps( $role, $rs );
             $processed_roles[$role] = (object) ['name' => $name, 'capabilities' => $caps];
@@ -176,18 +182,17 @@ class war_config {
             $new_role = $wp_roles->add_role( $role, $val->name, $val->capabilities );
             if( $new_role === null ){ //Looks like that role already exists
                 $existing_role = $wp_roles->get_role( $role );
-                // if( $role != 'administrator' ){
-                //     foreach( array_keys( $existing_role->capabilities ) as $c ){
-                //         if( ! in_array( $c, array_keys($val->capabilities) ) ){
-                //             $wp_roles->remove_cap( $role, $c );
-                //         }
-                //     }
-                // }
-                foreach( array_keys($val->capabilities) as $c ){
+                foreach( array_keys( $val->capabilities) as $c ){
                     if(! in_array($c, array_keys( $existing_role->capabilities ) ) ) $wp_roles->add_cap( $role, $c );
                 }
             }
         }
+
+        /** Save the New Roles and Groups **/
+        $new_roles = update_option( 'war_custom_user_roles', $this->war_config['user_roles'] );
+        /** Make sure the Default Role is set **/
+        $this->config_set_default_role( $this->war_config[ 'user_roles' ] );
+        return;
     }
 
     /**
@@ -214,7 +219,7 @@ class war_config {
                 'get_home_page' => true
             ],
             'is_multisite' => is_multisite(),
-            'user_roles' => [ 'owner', 'dev', 'manager', 'user' ],
+            'user_roles' => [],
             'version' => 1,
             'permalink' => '/posts/%postname%/',
             'category_base' => 'category'

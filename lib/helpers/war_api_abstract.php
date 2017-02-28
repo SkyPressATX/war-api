@@ -1,12 +1,5 @@
 <?php
 
-require_once __DIR__ . '/../endpoints/new_custom_endpoint.php';
-require_once __DIR__ . '/../endpoints/new_custom_model.php';
-require_once __DIR__ . '/../security/war_security.php';
-require_once __DIR__ . '/../data/war_data.php';
-require_once 'war_arg_helper.php';
-require_once 'global_helpers.php';
-
 abstract class war_api {
 
     public $help;
@@ -28,14 +21,11 @@ abstract class war_api {
     public function war_add_endpoint( $uri = false, $op = false, $cb = false ){
         $new_object = new war_new_endpoint; // Setup the new_endpoint object
         $new_data = $new_object->new_endpoint( $uri, $op, $cb );
+        if( ! $new_data || ! is_array( $new_data ) || empty( $new_data ) ) return; //Silent fail
         add_action( 'war_custom_endpoints', function( $config ) use ( $new_object, $new_data ){
             /***** Register the Endpoint via register_rest_route *****/
             $new_object->register_endpoint( $new_data, $config );
         }, 10, 1);
-
-        /** Debating if we should use GLOBALS or Filters **/
-        // if( ! isset( $GLOBALS[ 'war_custom_endpoints' ] ) ) $GLOBALS['war_custom_endpoints'] = [];
-        // $GLOBALS[ 'war_custom_endpoints' ][] = $new_data;
 
         add_filter( 'war_list_custom_endpoint', function( $list ) use ( $new_data ){
             $list[] = $new_data;
@@ -50,10 +40,6 @@ abstract class war_api {
             /***** Register the Endpoint via register_rest_route *****/
             $new_object->register_model( $new_data, $config );
         }, 10, 1);
-
-        /** Debating if we should use GLOBALS or Filters **/
-        // if( ! isset( $GLOBALS[ 'war_custom_models' ] ) ) $GLOBALS['war_custom_models'] = [];
-        // $GLOBALS[ 'war_custom_models' ][] = $new_data;
 
         add_filter( 'war_list_custom_models', function( $list ) use ( $new_data ){
             $list[] = $new_data;

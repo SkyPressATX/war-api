@@ -6,7 +6,7 @@ class war_arg_helper {
         if( empty( $request ) ) return new WP_Error( 403, 'No Request Object Provided' );
         $data = (object) array();
         $data->params = ( is_object($request) ) ? (object) $request->get_params() : (object) $request;
-        $cu = wp_get_current_user();
+        $cu = apply_filters( 'war_set_current_user', wp_get_current_user() );
         $data->current_user = (object) [
             'id' => $cu->ID,
             'email' => $cu->data->user_email,

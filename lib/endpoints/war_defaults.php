@@ -153,18 +153,15 @@ if( class_exists( 'war_api' ) ): //Make sure the war_api class exists first
         }
 
         private function war_get_wconf_class(){
-            require_once __DIR__ . "/war_get_options.php";
             return new war_get_options;
         }
 
         private function war_get_wua_class(){
-            require_once __DIR__ . "/war_user_actions.php";
             return new war_user_actions;
         }
 
         private function war_require_and_get_class( $c = false, $f = false ){
             if($c === false) return false;
-            require_once __DIR__ . $f;
             return new $c;
         }
 

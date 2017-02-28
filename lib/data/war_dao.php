@@ -1,7 +1,5 @@
 <?php
 
-// require_once "war_response.php";
-
 class war_dao {
 
     public $prefix;
