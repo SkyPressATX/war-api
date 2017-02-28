@@ -1,0 +1,17 @@
+*~
+# Ignore Common Files
+*~
+.DS_Store
+.svn
+.cvs
+*.bak
+*.swp
+Thumbs.db
+
+# NO VAGRANT FILES
+*.box
+.vagrant
+.vagrant/*
+Vagrantfile
+
+
