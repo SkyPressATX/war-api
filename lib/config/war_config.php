@@ -203,7 +203,7 @@ class war_config {
     private function get_default_config(){
         return [
             'api_name' => 'war',
-            'api_prefix' => 'api',
+            'api_prefix' => 'wp-json',
             'admin_toolbar' => false,
             'blog_id' => get_current_blog_id(),
             'default_endpoints' => [

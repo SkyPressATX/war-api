@@ -63,7 +63,7 @@ class war_init {
         if( empty( $this->war_config ) ) $this->war_config = $this->war_config_object->set_config();
 
         $this->war_config_object->config_set_permalink( $this->war_config );
-        $this->war_config_object->config_set_category_base( $this->war_config );
+        // $this->war_config_object->config_set_category_base( $this->war_config );
     }
 
     public function war_handle_non_pages( $request ){
