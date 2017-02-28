@@ -24,14 +24,19 @@ class war_new_endpoint {
     public function register_endpoint( $endpoint, $config ){
         $this->war_config = (object)$config;
         $this->endpoint = (object)$endpoint;
-        register_rest_route( $this->war_config->namespace, $this->endpoint->uri, array(
-            array(
-                'methods' => ( isset( $this->endpoint->options->method ) ) ? $this->endpoint->options->method : 'GET',
-                'callback' => [ $this, 'endpoint_callback' ],
-                'permission_callback' => [ $this, 'endpoint_role_check' ],
-                'args' => $this->endpoint->options->args
-            )
-        ) );
+
+        $register_options = array(
+            'methods' => ( isset( $this->endpoint->options->method ) ) ? $this->endpoint->options->method : 'GET',
+            'callback' => [ $this, 'endpoint_callback' ]
+        );
+
+        if( isset( $this->endpoint->options->access ) && $this->endpoint->options->access !== null )
+            $register_options[ 'permission_callback' ] = [ $this, 'endpoint_role_check' ];
+
+        if( isset( $this->endpoint->options->args ) && ! empty( $this->endpoint->options->args ) )
+            $register_options[ 'args' ] = $this->endpoint->options->args;
+
+        register_rest_route( $this->war_config->namespace, $this->endpoint->uri, [ $register_options ] );
     }
 
     public function endpoint_callback( \WP_REST_Request $request ){
@@ -47,8 +52,7 @@ class war_new_endpoint {
 
     public function endpoint_role_check( \WP_REST_Request $request ){
         $security = new war_security;
-        $auth_headers = $this->arg_helper->get_auth_headers( $request );
-        return $security->role_check( $this->endpoint->options->access, $auth_headers );
+        return $security->role_check( $this->endpoint->options->access );
     }
 
 }
