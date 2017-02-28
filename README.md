@@ -1,6 +1,8 @@
 # WAR Framework #
-The WAR Framework de-couples the front and back ends of WordPress.
+
 *"Let the front-end front and the back-end back!"*
+
+The WAR Framework de-couples the front and back ends of WordPress.
 
 ### What does WAR stand for? ###
 * W - WordPress
