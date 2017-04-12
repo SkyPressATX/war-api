@@ -149,12 +149,14 @@ class war_config {
         /** Retreive Previous Custom Roles **/
         $old_roles = get_option( 'war_custom_user_roles' );
         /** Remove any old custom roles that are no longer declared. Must perform this step before exiting **/
-        foreach( $old_roles as $or ){
-            if( ! in_array( $or, $this->war_config[ 'user_roles' ] ) ){
-                $wp_roles->remove_role( $or );
-                $remove_role = true;
+        if( ! empty( $old_roles ) > 0 ):
+            foreach( $old_roles as $or ){
+                if( ! in_array( $or, $this->war_config[ 'user_roles' ] ) ){
+                    $wp_roles->remove_role( $or );
+                    $remove_role = true;
+                }
             }
-        }
+        endif; // Helps with local development
 
         if( empty( $this->war_config[ 'user_roles' ] ) || ! isset( $remove_role ) ) return; //Now we can leave knowing that things are cleaned up
 
