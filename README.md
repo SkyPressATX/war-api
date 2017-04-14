@@ -100,27 +100,27 @@ add_action('plugins_loaded', function(){
  */
 private function get_default_config(){
 	return [
-		'api_name' => 'war',
-		'api_prefix' => 'wp-json',
-		'admin_toolbar' => false,
-		'blog_id' => get_current_blog_id(),
-		'default_endpoints' => [
-			'build_tables' => true,
-			'set_config' => true,
-			'menu' => true,
-			'site_options' => true,
-			'theme_options' => true,
-			'jwt_token' => true,
-			'login' => true,
-			'logout' => true,
-			'register' => true,
-			'get_home_page' => true
+		'api_name' => 'war', // API Namespace
+		'api_prefix' => 'wp-json', // API Prefix ( https://yoursite.com/<api_prefix>/<api_name>/<version>/endpoint/uri )
+		'admin_toolbar' => false, // Show or Hide the Admin Tool bar when browsing the site while logged in
+		'blog_id' => get_current_blog_id(), // Useful for Multi-Site configurations
+		'default_endpoints' => [ // Control which default Endpoints get registered
+			'build_tables' => true, // Used to adjust the table structure of Data Models after changes have been made
+			'set_config' => true, // Used to manually the run static config method in /lib/config/war_config.php
+			'menu' => true, // Endpoint to return a JSON string of the current Menu Structure
+			'site_options' => true, // Return JSON string of current configured WAR API Options
+			'theme_options' => true, // Return JSON string of current saved Theme Options
+			'jwt_token' => true, // Allow JSON Web Token Authentication and Management
+			'login' => true, // Allow ability to login to the site via the WAR API
+			'logout' => true, // Allow ability to logout of the site via the WAR API
+			'register' => true, // Allow ability to Register a new user via the WAR API
+			'get_home_page' => true // Return the page ID that has been set as the "Home Page"
 		],
-		'is_multisite' => is_multisite(),
-		'user_roles' => [],
-		'version' => 1,
-		'permalink' => '/posts/%postname%/',
-		'category_base' => 'category'
+		'is_multisite' => is_multisite(), // Is this a Multi-Site instance
+		'user_roles' => [], // List of Custom User Roles
+		'version' => 1, // API Version
+		'permalink' => '/posts/%postname%/', // Define the desired permalink structure
+		'category_base' => 'category' // Define the desired Category Base
 	];
 }
 ```
@@ -133,3 +133,42 @@ private function get_default_config(){
  * `'jwt_token' => false`
  * `'register' => false`
  * `'get_home_page' => false`
+
+### Create Custom Endpoint ###
+Custom Endpoints are the best way to define and control all of the logic and information that will be returned.
+
+* `$this->war_add_endpoint( $uri = 'string', $options = 'array()', $call_back = [ $this, 'cb_string' ] )` is the primary method used for Registering a Custom Endpoint.
+* This method requires 3 parameters:
+ * $uri -> The Endpoint Uri *https://yoursite.com/<api_prefix>/<api_namespace>/<version><$uri>*
+  * ***Note: If the $uri does not start with a backslash ( / ), then one will automatically be added***
+ * $options -> Array of Options you would like your Endpoint to adhere to. *This can be blank, though it typically isn't*:
+  * `'access' => 'string' | array | true | false | null` Access refers to which group of users (if any) has access to this Endpoint:
+   * 'string' can be one of the custom 'user_roles' provided the WAR API Configuration or an available user capability
+   * Array is used if you have custom User Roles and Groups configured. `[ 'group_name' => 'user_role' ]`
+   * `true` Indicates that this endpoint is accessible to any authenticated user.
+   * `false` (default access value) Indicates that this endpoint is not available for direct access, however can be called from within the Site by un-authenticated users. `false` Endpoints require a valid WP Nonce to be passed. This is primarily for endpoints such as the default "menu" endpoint.
+   * `null` Indicates that this endpoint is completely open to the public. No form of authentication is needed.
+  * `args` -> Array of URL Parameters you would like the Endpoint to accept. ` 'args' => [ 'url_param_name' => [] ]` The main properties to declare for each arg is:
+   * `'type' => 'string' | 'integer' | 'date' | 'array' | 'bool' | 'object' | 'enum' | 'email'` Validate URL params based on one of these conditions
+    * Array is a comma separated string of values *?room_numbers=1,2,3,4*
+   * `'required' => true | false` Require any URL Param in order to validate the request
+   * `'default' => <some_value>` Set the default value of this URL Param should the request not include one *Note: Default values are set before "Required" is checked, thus there will always a value and require is not needed*
+   * `'options' => array()` Array of acceptable values.
+    * `'pets' => [ 'type' => 'string', 'default' => 'Cherry', 'options' => [ 'Niko', 'Cherry' ] ]` This URL could only accept the URL Param `pets` with a value of either `Cherry`, or `Niko`. *(https://yoursite.com/<api_prefix>/<api_namespace>/<version><$uri>?pets=Chompers This Request would fail)*
+    * If `type` equals `array` then any combination of the URL Param value should match the options declared:
+     * `'humans' => [ 'type' => 'array', 'required' => true, 'options' => [ 'Sally', 'Sarah', 'Mark', 'Jack' ] ]` The URL Param `humans` could contain the value *?humans=Sally,Sarah* or *?humans=Mark,Sally,Jack* or just *?humans=Mark*. However *?humans=Mary,Mark,Jack,Sarah* would fail to validate
+  *      
+
+
+
+
+
+
+
+
+
+
+
+
+
+$this->war_add_endpoint( $end[ 'uri' ], $end[ 'options' ], $end[ 'cb' ] );
