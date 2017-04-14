@@ -84,13 +84,6 @@ if( class_exists( 'war_api' ) ): //Make sure the war_api class exists first
                         'access' => 'administrator',
                     ],
                     'cb' => [ $this, 'war_app_config' ]
-                ],
-                'get_home_page' => [
-                    'uri' => '/homepage',
-                    'options' => [
-                        'access' => null
-                    ],
-                    'cb' => [ $this, 'war_get_home_page' ]
                 ]
             ];
 
@@ -148,10 +141,6 @@ if( class_exists( 'war_api' ) ): //Make sure the war_api class exists first
             return $class->war_build_tables( $data );
         }
 
-        public function war_get_home_page( $data ){
-            return get_option( 'page_on_front' );
-        }
-
         private function war_get_wconf_class(){
             return new war_get_options;
         }
@@ -166,8 +155,5 @@ if( class_exists( 'war_api' ) ): //Make sure the war_api class exists first
         }
 
     }
-
-    // Add this extension to the war_api_register hook
-    // add_action('war_api_extend', [new war_defaults, 'register_default_endpoints'] );
 
 endif;
