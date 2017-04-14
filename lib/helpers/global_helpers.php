@@ -49,7 +49,7 @@ class war_global_helpers {
     public function war_encrypt( $string ){
         $iv_size = mcrypt_get_iv_size( MCRYPT_RIJNDAEL_256, MCRYPT_MODE_CFB );
         $iv = mcrypt_create_iv( $iv_size, MCRYPT_RAND) ;
-        $key = hash( 'sha256', WPE_APIKEY, true );
+        $key = hash( 'sha256', SECURE_AUTH_KEY, true );
         $enc = mcrypt_encrypt( MCRYPT_RIJNDAEL_256, $key, $string, MCRYPT_MODE_CFB, $iv);
         $com = $iv . $enc;
         return base64_encode( $com );
@@ -61,7 +61,7 @@ class war_global_helpers {
         $debase = base64_decode( $string );
         $iv = substr( $debase, 0, $iv_size );
         $val = substr( $debase, $iv_size );
-        $dc = mcrypt_decrypt( MCRYPT_RIJNDAEL_256, hash( 'sha256', WPE_APIKEY, true ), $val, MCRYPT_MODE_CFB, $iv );
+        $dc = mcrypt_decrypt( MCRYPT_RIJNDAEL_256, hash( 'sha256', SECURE_AUTH_KEY, true ), $val, MCRYPT_MODE_CFB, $iv );
         return ( $dc ) ? $dc : $val;
     }
 
