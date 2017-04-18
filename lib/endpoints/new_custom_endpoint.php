@@ -14,6 +14,7 @@ class war_new_endpoint {
         $op = (object) $op;
         if($uri === false || $cb === false) return false;
         $op->args = ( isset($op->args) ) ? $this->arg_helper->process_args( $op->args ): array();
+        $uri = ( preg_match( '/^\//', $uri ) ) ? $uri : '/' . $uri; // Make sure it starts with a backslash
         return array(
             'uri' => $uri,
             'cb' => $cb,

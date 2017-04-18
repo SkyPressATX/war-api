@@ -84,6 +84,13 @@ if( class_exists( 'war_api' ) ): //Make sure the war_api class exists first
                         'access' => 'administrator',
                     ],
                     'cb' => [ $this, 'war_app_config' ]
+                ],
+                'get_home_page' => [
+                    'uri' => '/home',
+                    'options' => [
+                        'access' => false
+                    ],
+                    'cb' => [ $this, 'war_get_home' ]
                 ]
             ];
 
@@ -94,6 +101,20 @@ if( class_exists( 'war_api' ) ): //Make sure the war_api class exists first
                     $this->war_add_endpoint( $end[ 'uri' ], $end[ 'options' ], $end[ 'cb' ] );
             }, $allowed_endpoints);
 
+        }
+
+        public function war_get_home( $data ){
+            $home_id = get_option('page_on_front');
+            if( intval( $home_id ) === 0 || is_wp_error( $home_id ) ) return new WP_Error( 'no_home_page', 'No Home Page was Set' );
+            $home_req = new WP_Rest_Request( 'GET', '/wp/v2/pages' );
+            // $home_req->set_param( 'id', $home_id );
+            $home_req->set_query_params([
+                'id' => $home_id,
+                '_embed' => '1'
+            ]);
+            $home_res = rest_do_request( $home_req );
+            if( is_wp_error( $home_res ) ) return $home_res;
+            return $home_res->data[0]; // There should only be one
         }
 
         public function war_login( $data ){
