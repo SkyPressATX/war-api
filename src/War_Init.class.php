@@ -46,7 +46,6 @@ class War_Init {
 		$this->add_filters();
 		$this->add_actions();
 		add_filter( 'request', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
-		// register_activation_hook( __FILE__, [ $this, 'auto_setup' ] );
 	}
 
 	private function get_current_user(){

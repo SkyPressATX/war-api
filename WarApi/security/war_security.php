@@ -66,7 +66,7 @@ class war_security {
      * @return array
      */
     public function get_access_levels( $war_config, $access_options = array() ) {
-        if( is_string($access_options) ){ // Set all Perm Levels to String Value
+        if( is_string( $access_options ) ){ // Set all Perm Levels to String Value
             return (object) [
                 'create' => $access_options,
                 'read' => $access_options,
