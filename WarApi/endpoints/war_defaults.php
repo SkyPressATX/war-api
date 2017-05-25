@@ -8,98 +8,78 @@ if( class_exists( 'war_api' ) ): //Make sure the war_api class exists first
             $defaults = [
                 'build_tables' => [
                     'uri' => '/data-model-setup',
-                    'options' => [
-                        'access' => 'administrator'
-                    ],
-                    'cb' => [ $this, 'war_build_tables' ]
+                    'access' => 'administrator',
+                    'callback' => [ $this, 'war_build_tables' ]
                 ],
                 'jwt_token' => [
                     'uri' => '/jwt-token',
-                    'options' => [
-                        'access' => true
-                    ],
-                    'cb' => [ $this, 'war_jwt_create' ]
+                    'access' => true,
+                    'callback' => [ $this, 'war_jwt_create' ]
                 ],
                 'menu' => [
                     'uri' => '/menu',
-                    'options' => [
-                        'access' => false
-                    ],
-                    'cb' => [ $this, 'war_get_menu' ]
+                    'access' => false,
+                    'callback' => [ $this, 'war_get_menu' ]
                 ],
                 'theme_options' => [
                     'uri' => '/theme-options',
-                    'options' => [
-                        'access' => false,
-                        'method' => 'POST'
-                    ],
-                    'cb' => [ $this, 'war_theme_options' ]
+                    'access' => false,
+                    'method' => 'POST',
+                    'callback' => [ $this, 'war_theme_options' ]
                 ],
                 'site_options' => [
                     'uri' => '/site-options',
-                    'options' => [
-                        'access' => false
-                    ],
-                    'cb' => [ $this, 'war_site_options' ]
+                    'access' => false,
+                    'callback' => [ $this, 'war_site_options' ]
                 ],
                 'login' => [
                     'uri' => '/login',
-                    'options' => [
-                        'access' => null,
-                        'method' => 'POST',
-                        'args'=>[
-                            'username' => [ 'type' => 'string', 'required' => true ],
-                            'password' => [ 'type' => 'string', 'required' => true ]
-                        ]
+                    'access' => null,
+                    'method' => 'POST',
+                    'params'=>[
+                        'username' => [ 'type' => 'string', 'required' => true ],
+                        'password' => [ 'type' => 'string', 'required' => true ]
                     ],
-                    'cb' => [ $this, 'war_login' ]
+                    'callback' => [ $this, 'war_login' ]
                 ],
                 'logout' => [
                     'uri' => '/logout',
-                    'options' => [
-                        'access' => true
-                    ],
-                    'cb' => [ $this, 'war_logout' ]
+                    'access' => true,
+                    'callback' => [ $this, 'war_logout' ]
                 ],
                 'register' => [
                     'uri' => '/register',
-                    'options' => [
-                        'access' => null,
-                        'method' => 'POST',
-                        'args' => [
-                            'email' => [ 'type' => 'email', 'required' => true ],
-                            'password' => [ 'type' => 'string', 'required' => true ],
-                            'role' => [
-                                'type' => 'string',
-                                'options' => ( isset( $war_config[ 'user_roles' ] ) ) ? $war_config[ 'user_roles' ] : [],
-                                'default' => end( $war_config['user_roles'] )
-                            ]
+                    'access' => null,
+                    'method' => 'POST',
+                    'params' => [
+                        'email' => [ 'type' => 'email', 'required' => true ],
+                        'password' => [ 'type' => 'string', 'required' => true ],
+                        'role' => [
+                            'type' => 'string',
+                            'options' => ( isset( $war_config[ 'user_roles' ] ) ) ? $war_config[ 'user_roles' ] : [],
+                            'default' => end( $war_config['user_roles'] )
                         ]
                     ],
-                    'cb' => [ $this, 'war_signup' ]
+                    'callback' => [ $this, 'war_signup' ]
                 ],
                 'set_config' => [
                     'uri' => '/run-app-config',
-                    'options' => [
-                        'access' => 'administrator',
-                    ],
-                    'cb' => [ $this, 'war_app_config' ]
+                    'access' => 'administrator',
+                    'callback' => [ $this, 'war_app_config' ]
                 ],
                 'get_home_page' => [
                     'uri' => '/home',
-                    'options' => [
-                        'access' => false
-                    ],
-                    'cb' => [ $this, 'war_get_home' ]
+                    'access' => false,
+                    'callback' => [ $this, 'war_get_home' ]
                 ]
             ];
 
             $allowed_endpoints = array_filter( $war_config[ 'default_endpoints' ] );
 
-            array_walk( $defaults, function($end, $key, $ae){
-                if( isset( $ae[ $key ] ) )
-                    $this->war_add_endpoint( $end[ 'uri' ], $end[ 'options' ], $end[ 'cb' ] );
-            }, $allowed_endpoints);
+            array_walk( $defaults, function($end, $key ) use( $allowed_endpoints ){
+                if( isset( $allowed_endpoints[ $key ] ) )
+                    $this->war_add_endpoint( $end );
+            });
 
         }
 

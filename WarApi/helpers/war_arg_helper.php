@@ -75,6 +75,9 @@ class war_arg_helper {
             case 'string':
                 return function($a){ return ( is_string( $a ) || is_bool( $a ) ); };
                 break;
+            case 'text':
+                return function($a){ return ( is_string( $a ) ); };
+                break;
             case 'integer':
                 return function($a){ return is_numeric( $a ); };
                 break;

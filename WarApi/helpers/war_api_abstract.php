@@ -3,6 +3,7 @@
 abstract class war_api {
 
     public $help;
+    public $custom_config;
 
     public function __construct(){
         $this->help = new war_global_helpers; // Setup the $help object
@@ -18,38 +19,51 @@ abstract class war_api {
         });
     }
 
-    public function war_add_endpoint( $uri = false, $op = false, $cb = false ){
-        $new_object = new war_new_endpoint; // Setup the new_endpoint object
-        $new_data = $new_object->new_endpoint( $uri, $op, $cb );
-        if( ! $new_data || ! is_array( $new_data ) || empty( $new_data ) ) return; //Silent fail
-        add_action( 'war_custom_endpoints', function( $config ) use ( $new_object, $new_data ){
-            /***** Register the Endpoint via register_rest_route *****/
-            $new_object->register_endpoint( $new_data, $config );
-        }, 10, 1);
+    public function war_add_endpoint( $endpoint = [] ){
+        if( empty( $endpoint ) ) return;
 
-        add_filter( 'war_list_custom_endpoint', function( $list ) use ( $new_data ){
-            $list[] = $new_data;
-            return $list;
-        });
+        $stored = $this->war_new_store( $endpoint );
+
+        add_action( 'war_custom_endpoints', function( $config ) use( $stored ){
+            $end = new war_new_endpoint( $stored );
+            $end->register_endpoint( $config );
+        }, 10, 1 );
+
     }
 
-    public function war_add_model( $name = false, $op = false, $pre_data = null, $pre_return = null ){
-        $new_object = new war_new_model; // Setup the new_model object
-        $new_data = $new_object->new_model( $name, $op, $pre_data, $pre_return );
-        add_action( 'war_custom_models', function( $config ) use ( $new_object, $new_data ){
-            /***** Register the Endpoint via register_rest_route *****/
-            $new_object->register_model( $new_data, $config );
-        }, 10, 1);
+    public function war_add_model( $model = [] ){
+        if( empty( $model ) ) return;
 
-        add_filter( 'war_list_custom_models', function( $list ) use ( $new_data ){
-            $list[] = $new_data;
-            return $list;
-        });
+        $stored = $this->war_new_store( $model );
+
+        add_action( 'war_custom_models', function( $config ) use( $stored ){
+            $data_model = new war_new_model( $stored );
+            $data_model->register_model( $config );
+            add_filter( 'war_data_models', function( $models ) use( $stored ){
+                $models[] = $stored;
+                return $models;
+            });
+        }, 10, 1);
     }
+
+    public function war_new_store( $x = [] ){
+        if( empty( $x ) ) return $x;
+        if( is_object( $x ) ) $x = (array)$x;
+        $store = new war_data_store;
+        array_walk( $x, function( $val, $key ) use( $store ){
+            $store->$key = $val;
+        });
+        return $store;
+    }
+
+    /**
+    * Need to refactor this to use the newly existing REST API Internal Call Functionality
+    * Similar to the get_home_request default endpoint
+    **/
 
     public function war_local_call( $class = false, $cb = false, $data = array() ){
 
-        $avail_endpoints = apply_filters( 'war_list_custom_endpoint', [] );
+        // $avail_endpoints = apply_filters( 'war_list_custom_endpoint', [] );
 
         $class_found = array_filter( $avail_endpoints, function( $end ) use ( $class, $cb ){
             return ( $end['options'] && isset( $end['options']->class ) && $end['options']->class === $class && $end['options']->call === $cb );

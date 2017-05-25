@@ -149,7 +149,7 @@ class war_data {
         return ( $data->current_user->role === end( $data->war_config->user_roles ) ) ? $data->current_user->id : false;
     }
 
-    private function create_db_connection(){
+    public function create_db_connection(){
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->prefix = $wpdb->prefix;

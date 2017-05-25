@@ -4,15 +4,6 @@ class war_security {
 
     public $current_user = false;
 
-    public function security_is_user_logged_in(){
-        /** Check JWT Header and authenticity **/
-        if( ! $this->current_user && isset( $_SERVER[ 'HTTP_AUTHORIZATION' ] ) ) $this->security_key_check( $_SERVER[ 'HTTP_AUTHORIZATION' ] );
-        /** Check Nonce and authenticity **/
-        if( ! $this->current_user && isset( $_SERVER[ 'HTTP_X_WP_NONCE' ] ) ) $this->security_nonce_check( $_SERVER[ 'HTTP_X_WP_NONCE' ] );
-        /** Get WP Current User if all else fails **/
-        if( ! $this->current_user ) $this->current_user = $this->security_set_current_user();
-
-    }
 
     public function role_check( $cap = false ){
         /** Get the Current User Object as set by the war_set_current_user filter **/
@@ -40,6 +31,15 @@ class war_security {
         return ( isset( $cleared ) ) ? $cleared : false;
     }
 
+    public function security_is_user_logged_in(){
+        /** Check JWT Header and authenticity **/
+        if( ! $this->current_user && isset( $_SERVER[ 'HTTP_AUTHORIZATION' ] ) ) $this->security_key_check( $_SERVER[ 'HTTP_AUTHORIZATION' ] );
+        /** Check Nonce and authenticity **/
+        if( ! $this->current_user && isset( $_SERVER[ 'HTTP_X_WP_NONCE' ] ) ) $this->security_nonce_check( $_SERVER[ 'HTTP_X_WP_NONCE' ] );
+        /** Get WP Current User if all else fails **/
+        if( ! $this->current_user ) $this->current_user = $this->security_set_current_user();
+
+    }
     public function security_auth_check( &$auth_headers ){
 
         $result = false;

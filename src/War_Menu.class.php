@@ -1,6 +1,8 @@
 <?php
 
-class war_menu {
+namespace War_Api\Defaults;
+
+class War_Menu {
     /**
      * Get menu for location.
      *
