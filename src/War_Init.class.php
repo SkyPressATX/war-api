@@ -45,7 +45,6 @@ class War_Init {
 		$this->get_current_user();
 		$this->add_filters();
 		$this->add_actions();
-		add_filter( 'request', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
 	}
 
 	private function get_current_user(){
@@ -59,7 +58,7 @@ class War_Init {
 			add_action( 'init', [ $this->help, 'rewrite_flush' ] );
 		}
 
-		add_filter( 'request', [ $this, 'handle_missing_requests' ] );
+		add_filter( 'request', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
 	}
 
 	private function add_actions(){

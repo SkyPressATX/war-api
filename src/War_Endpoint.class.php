@@ -24,7 +24,7 @@ class War_Endpoint {
         if( is_wp_error( $prep ) ) return $prep;
 
 		$register_options = array(
-			'methods' => ( isset( $this->endpoint->method ) ) ? $this->endpoint->method : 'GET',
+			'methods' => ( isset( $this->endpoint->method ) ) ? $this->endpoint->method : \WP_REST_Server::READABLE,
 			'callback' => [ $this, 'endpoint_callback' ]
 		);
 
@@ -38,10 +38,11 @@ class War_Endpoint {
     }
 
     public function endpoint_callback( \WP_REST_Request $request ){
-        $data = $this->param_helper->get_request_args( $request, $this->war_config );
+        $data = $this->param_helper->get_request_args( $request );
         if( is_wp_error( $data ) ) return $data;
 
         $data->war_config = $this->war_config;
+		$data->current_user = $this->current_user;
 
         if( method_exists( $this->endpoint->callback[0], $this->endpoint->callback[1] ) )
             return call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $data );

@@ -10,12 +10,9 @@ class War_User {
 	private $war_user;
 	private $auth_by;
 
-	public function __construct(){
+	public function get_user(){
 		$this->get_wp_user();
 		$this->set_war_user();
-	}
-
-	public function get_user(){
 		return $this->war_user;
 	}
 

@@ -61,16 +61,16 @@ class War_Defaults {
 				'access' => false,
 				'callback' => [ $de, 'war_site_options' ]
 			],
-			// 'login' => [
-			// 	'uri' => '/login',
-			// 	'access' => null,
-			// 	'method' => 'POST',
-			// 	'params'=>[
-			// 		'username' => [ 'type' => 'string', 'required' => true ],
-			// 		'password' => [ 'type' => 'string', 'required' => true ]
-			// 	],
-			// 	'callback' => [ $de, 'war_login' ]
-			// ],
+			'login' => [
+				'uri' => '/login',
+				'access' => null,
+				'method' => 'POST',
+				'params'=>[
+					'username' => [ 'type' => 'string', 'required' => true ],
+					'password' => [ 'type' => 'string', 'required' => true ]
+				],
+				'callback' => [ $de, 'war_login' ]
+			],
 			'logout' => [
 				'uri' => '/logout',
 				'access' => true,

@@ -18,7 +18,8 @@ class Default_Config {
             'user_roles' => [],
             'version' => 1,
             'permalink' => '/posts/%postname%/',
-            'category_base' => 'category'
+            'category_base' => 'category',
+			'jwt_expire' => ( time() + ( DAY_IN_SECONDS * 30 ) )
         ];
 	}
 

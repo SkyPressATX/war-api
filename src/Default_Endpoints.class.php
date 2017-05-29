@@ -3,6 +3,7 @@
 namespace War_Api\Defaults;
 
 use War_Api\Defaults\War_Menu as War_Menu;
+use War_Api\Security\War_JWT as War_JWT;
 
 /**
  * Default Endpoints Class
@@ -26,19 +27,19 @@ class Default_Endpoints {
 		return $home_res->data[0]; // There should only be one
 	}
 
-	// public function war_login( $data ){
-	// 	$auth = wp_authenticate($data->params->username, $data->params->password);
-	//
-    //     if( is_wp_error( $auth ) ) return $auth;
-	//
-    //     wp_set_auth_cookie( $auth->ID );
-    //     wp_set_current_user( $auth->ID );
-	//
-    //     // return $auth;
-    //     $war_jwt = new war_jwt;
-    //     $jwt = $war_jwt->jwt_key_create();
-    //     return ['jwt' => $jwt ];
-	// }
+	public function war_login( $data ){
+		$auth = wp_authenticate($data->params->username, $data->params->password);
+
+        if( is_wp_error( $auth ) ) return $auth;
+
+        // wp_set_auth_cookie( $auth->ID );
+        // wp_set_current_user( $auth->ID );
+
+        // return $auth;
+        $war_jwt = new War_JWT( $data->war_config->jwt_expire, $auth->ID );
+        $jwt = $war_jwt->jwt_key_create();
+        return ['jwt' => $jwt ];
+	}
 
 	public function war_logout( $data ){
 		wp_logout();

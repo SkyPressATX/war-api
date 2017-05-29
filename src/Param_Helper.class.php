@@ -4,27 +4,27 @@ namespace War_Api\Helpers;
 
 class Param_Helper {
 
-	public function get_request_args( $request = [], $war_config = [] ){
+	public function get_request_args( $request = [] ){
         if( empty( $request ) ) return new WP_Error( 403, 'No Request Object Provided' );
         $data = (object) array();
         $data->params = ( is_object($request) ) ? (object) $request->get_params() : (object) $request;
-        $cu = apply_filters( 'war_set_current_user', wp_get_current_user() );
-        $data->current_user = (object) [
-            'id' => $cu->ID,
-            'email' => $cu->data->user_email,
-            'role' => $cu->roles[0],
-            'caps' => array_keys( array_filter( $cu->allcaps, function( $c ){ return $c; } ) )
-        ];
-        if( isset( $war_config->user_groups ) ) $data->current_user->groups = get_user_option( 'user_groups' );
+        // $cu = apply_filters( 'war_set_current_user', wp_get_current_user() );
+        // $data->current_user = (object) [
+        //     'id' => $cu->ID,
+        //     'email' => $cu->data->user_email,
+        //     'role' => $cu->roles[0],
+        //     'caps' => array_keys( array_filter( $cu->allcaps, function( $c ){ return $c; } ) )
+        // ];
+        // if( isset( $war_config->user_groups ) ) $data->current_user->groups = get_user_option( 'user_groups' );
         return $data;
     }
 
-    public function get_auth_headers( $request ){
-        return [
-            'jwt' => $request->get_header( 'authorization' ),
-            'nonce' => $request->get_header( 'x-wp-nonce' )
-        ];
-    }
+    // public function get_auth_headers( $request ){
+    //     return [
+    //         'jwt' => $request->get_header( 'authorization' ),
+    //         'nonce' => $request->get_header( 'x-wp-nonce' )
+    //     ];
+    // }
 
     public function process_args( $args = array() ){
         array_walk( $args, function( &$att ){
