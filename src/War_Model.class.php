@@ -5,6 +5,8 @@ namespace War_Api;
 // use War_Api\Helpers\Param_Helper as Param_Helper;
 use War_Api\Security\Role_Check as Role_Check;
 use War_Api\War_Endpoint as War_Endpoint;
+use War_Api\Data\Query_Builder as Query;
+use War_Api\Data\DAO as DAO;
 
 class War_Model {
 
@@ -20,6 +22,7 @@ class War_Model {
 
     public function register(){
 		$this->set_model_filters();
+		$this->get_access_levels();
 		$this->model_endpoints = $this->create_model_endpoints();
 
 		array_walk( $this->model_endpoints, function( $end ){
@@ -74,7 +77,7 @@ class War_Model {
 	}
 
 	private function get_access_levels(){
-		if( is_bool( $this->model->access ) || empty( $this->model->access ) ) return;
+		if( is_bool( $this->model->access ) || $this->model->access === NULL ) return;
 		if( is_string( $this->model->access ) ){ // Set all Perm Levels to String Value
 			return (object) [
 				'create' => $this->model->access,
@@ -95,6 +98,13 @@ class War_Model {
 
 	/***** Data Callbacks *****/
 	public function create_item( $data ){
+
+		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		$db = $this->db_connection( $data->db_info );
+		$qb = new Query_Builder( $this->model, $data->params );
+		$query = $qb->create_item();
+		$dao = new DAO( $db, $query );
+		return $dao->get_results();
 		return $data;
 
 		// $this->data_object->create_db_connection();
@@ -104,6 +114,13 @@ class War_Model {
 	}
 
 	public function get_items( $data ){
+
+		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		$db = $this->db_connection( $data->db_info );
+		$qb = new Query_Builder( $this->model, $data->params );
+		$query = $qb->get_all();
+		$dao = new DAO( $db, $query );
+		return $dao->get_results();
 		return $data;
 
 		// $query = new war_dao_select;
@@ -122,7 +139,15 @@ class War_Model {
 	}
 
 	public function get_item( $data ){
-		return $data;
+
+		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		$db = $this->db_connection( $data->db_info );
+		$qb = new Query_Builder( $this->model, $data->params );
+		$query = $qb->get_item();
+		$dao = new DAO( $db, $query );
+		return $dao->get_results();
+
+		return $db;
 		// $assoc = ( isset( $this->model->assoc ) ) ? $this->model->assoc : false;
 		// $this->data_object->create_db_connection();
 		// $item = $this->data_object->data_model_get_one( $this->model->name, $data, $assoc );
@@ -131,6 +156,13 @@ class War_Model {
 	}
 
 	public function update_item( $data ){
+
+		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		$db = $this->db_connection( $data->db_info );
+		$qb = new Query_Builder( $this->model, $data->params );
+		$query = $qb->update_item();
+		$dao = new DAO( $db, $query );
+		return $dao->get_results();
 		return $data;
 
 		// $this->data_object->create_db_connection();
@@ -138,18 +170,34 @@ class War_Model {
 	}
 
 	public function delete_item( $data ){
+
+		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		$db = $this->db_connection( $data->db_info );
+		$qb = new Query_Builder( $this->model, $data->params );
+		$query = $qb->delete_item();
+		$dao = new DAO( $db, $query );
+		return $dao->get_results();
 		return $data;
 
 		// $this->data_object->create_db_connection();
 		// return $this->data_object->data_model_delete_one( $this->model->name, $data );
 	}
 
+	private function db_connection( $db_info = array() ){
+		if( empty( $db_info ) ){
+			global $wpdb;
+			return $wpdb;
+		}
+		$db_info = (object)$db_info;
+		return new \wpdb( $db_info->user, $db_info->password, $db_info->database, $db_info->host );
+	}
+
 	private function set_model_filters(){
 		// if( ! $this->model->name || empty( $this->model->params ) ) return false;
 		// $this->model->params = $this->param_helper->process_args( $this->model->params );
 
-		if( isset( $this->model->pre_data ) ) add_filter( 'war_pre_data_' . $this->model->name, $this->model->pre_data, 10, 2 );
-		if( isset( $this->model->pre_return ) ) add_filter( 'war_pre_return_' . $this->model->name, $this->model->pre_return );
+		if( isset( $this->model->pre_data ) ) add_filter( 'war_pre_data_' . $this->model->name, $this->model->pre_data, 15 );
+		if( isset( $this->model->pre_return ) ) add_filter( 'war_pre_return_' . $this->model->name, $this->model->pre_return, 15 );
 	}
 
 
