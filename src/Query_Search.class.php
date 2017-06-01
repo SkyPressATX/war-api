@@ -70,13 +70,13 @@ class Query_Search {
 
 	private function build_filter_query( $filter ){
 		$f = explode( ':', strtolower( $filter ) );
-		array_walk( $f, function( &$x ){ $x = trim( $x ); });
+		array_walk( $f, function( &$x ){ $x = (string)( trim( $x ); });
 		switch( trim( $f[1] ) ){
 			case 'like':
-				return '`' . $f[0] . '` LIKE("%' . preg_replace( '/[^a-z0-9]/', '', strtolower( $f[2] ) ) . '%")';
+				return '`' . $f[0] . '` LIKE("%' . preg_replace( '/[^a-z0-9]/', '', $f[2] ) . '%")';
 				break;
 			case 'nlike':
-				return '`' . $f[0] . '` NOT LIKE("%' . preg_replace( '/[^a-z0-9]/', '', strtolower( $f[2] ) ) . '%")';
+				return '`' . $f[0] . '` NOT LIKE("%' . preg_replace( '/[^a-z0-9]/', '', $f[2] ) . '%")';
 				break;
 			case 'gt':
 				return '`' . $f[0] . '` > ' . $this->help->quote_it( $f[2] );
