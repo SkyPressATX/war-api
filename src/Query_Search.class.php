@@ -75,6 +75,9 @@ class Query_Search {
 			case 'like':
 				return '`' . $f[0] . '` LIKE("%' . preg_replace( '/[^a-z0-9]/', '', strtolower( $f[2] ) ) . '%")';
 				break;
+			case 'nlike':
+			return '`' . $f[0] . '` NOT LIKE("%' . preg_replace( '/[^a-z0-9]/', '', strtolower( $f[2] ) ) . '%")';
+			break;
 			case 'gt':
 				return '`' . $f[0] . '` > ' . $this->help->quote_it( $f[2] );
 				break;
@@ -90,6 +93,8 @@ class Query_Search {
 			case 'eq':
 				return '`' . $f[0] . '` = ' . $this->help->quote_it( $f[2] );
 				break;
+			case 'ne':
+				return '`' . $f[0] . '` != ' . $this->help->quote_it( $f[2] );
 
 		}
 	}
