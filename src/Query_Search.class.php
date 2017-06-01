@@ -76,8 +76,8 @@ class Query_Search {
 				return '`' . $f[0] . '` LIKE("%' . preg_replace( '/[^a-z0-9]/', '', strtolower( $f[2] ) ) . '%")';
 				break;
 			case 'nlike':
-			return '`' . $f[0] . '` NOT LIKE("%' . preg_replace( '/[^a-z0-9]/', '', strtolower( $f[2] ) ) . '%")';
-			break;
+				return '`' . $f[0] . '` NOT LIKE("%' . preg_replace( '/[^a-z0-9]/', '', strtolower( $f[2] ) ) . '%")';
+				break;
 			case 'gt':
 				return '`' . $f[0] . '` > ' . $this->help->quote_it( $f[2] );
 				break;
