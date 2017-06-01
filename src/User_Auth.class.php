@@ -37,9 +37,9 @@ class User_Auth {
 		if(empty($key)) return false;
 		$jwt = new War_JWT;
 		$res = $jwt->jwt_key_decode( $key );
-		print_r( $res );
 		if( is_wp_error( $res ) ) return $res;
 		$this->auth_type = 'JWT';
+		return $res;
 	}
 
 	private function nonce_check( $nonce ){

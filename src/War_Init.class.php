@@ -40,11 +40,15 @@ class War_Init {
 	 * @access public
 	 **/
 	public function init(){
-		$this->help = new Global_Helpers;
-		$this->auto_config = new War_Auto_Config( $this->war_config );
-		$this->get_current_user();
-		$this->add_filters();
-		$this->add_actions();
+		try {
+			$this->help = new Global_Helpers;
+			$this->auto_config = new War_Auto_Config( $this->war_config );
+			$this->get_current_user();
+			$this->add_filters();
+			$this->add_actions();
+		} catch( Exception $e ){
+			wp_die( $e->getMessage() );
+		}
 	}
 
 	private function get_current_user(){

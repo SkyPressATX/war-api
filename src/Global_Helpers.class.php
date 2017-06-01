@@ -36,4 +36,50 @@ class Global_Helpers {
 	public function rewrite_flush(){
         flush_rewrite_rules();
     }
+
+	public function quote_it( $x ){
+		if( is_numeric( $x ) ) return $x;
+		return '"' . $x . '"';
+	}
+
+    public function numberfy( $array ){
+        $array = (array) $array;
+        foreach( $array as &$row ){
+            if( is_array( $row ) || is_object( $row ) ){
+                $row = $this->numberfy( $row );
+            }else{
+                if( is_numeric( $row ) ) $row = (int) $row;
+            }
+        }
+        return $array;
+    }
+
+	public function sql_data_type( $type = 'string' ){
+		switch ( $type ){
+			case 'string':
+				return 'VARCHAR(50)';
+				break;
+			case 'email':
+				return 'VARCHAR(150)';
+				break;
+			case 'text':
+				return 'LONGTEXT';
+				break;
+			case 'integer':
+				return 'BIGINT';
+				break;
+			case 'model':
+				return 'MEDIUMINT';
+				break;
+			case 'assoc':
+				return 'MEDIUMINT';
+				break;
+			case 'date':
+				return 'DATETIME';
+				break;
+			default:
+				return 'VARCHAR(150)';
+				break;
+		}
+	}
 }

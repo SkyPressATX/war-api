@@ -34,7 +34,6 @@ class War_JWT {
     }
 
 	public function jwt_key_decode( $auth_header = false ){
-		print_r( [ 'auth_header', $auth_header ] );
         if($auth_header === false) return false;
         list($token) = sscanf($auth_header, 'Bearer %s');
         if(!$token) return false;
@@ -53,7 +52,6 @@ class War_JWT {
         if( ! isset($decoded_token->data->user->id) ) $fail = 'No User';
 
         if(isset($fail)) return new WP_Error(403, 'Invalid Token Params -- ' . $fail);
-
         return $decoded_token->data->user->id;
     }
 
