@@ -42,6 +42,21 @@ class Query_Builder {
 		return 'CREATE TABLE IF NOT EXISTS '. $table . ' (' . implode( ', ', $values ) . ')';
 	}
 
+	public function add_col_query( $table, $col ){
+		$q = 'ALTER TABLE ' . $table;
+
+		foreach( $col as $k => $c ){
+			$x[] = ' ADD `' . $k . '` ' . $this->help->sql_data_type( $c[ 'type' ] );
+		}
+
+		$q .= implode( ',', $x );
+		return $q;
+	}
+
+	public function drop_col_query( $table, $col ){
+		return esc_sql( 'ALTER TABLE ' . $table . ' DROP ' . implode( ', DROP ', $col ) );
+	}
+
 	public function insert_data( $model_params, $requested_params ){
 		$model_params = (array)$model_params;
 		$requested_params = (array)$requested_params;
@@ -59,7 +74,7 @@ class Query_Builder {
 	}
 
 	public function read_items_query( $table = false, $params = array() ){
-		if( !$table ) throw new Exception( 'query-builder', 'Missing Table', array( 'status' => 501 ) );
+		if( !$table ) throw new \Exception( 'Missing Table' );
 		$q = 'SELECT * FROM ' . $table;
 
 		$search = new Query_Search( $params );
@@ -71,14 +86,20 @@ class Query_Builder {
 		if( isset( $query_search->offset ) )  $q .= ' OFFSET ' . $query_search->offset;
 
 		echo "$q\n\n";
-		
+
 		return $q;
 	}
 
 	public function read_item_query( $table = false, $id = false ){
-		if( !$table ) throw new Exception( 'query-builder', 'Missing Table', array( 'status' => 501 ) );
-		if( !$id ) throw new Exception( 'query-builder', 'Missing Item ID', array( 'status' => 501 ) );
+		if( !$table ) throw new \Exception( 'Missing Table' );
+		if( !$id ) throw new \Exception( 'Missing Item ID' );
 		return 'SELECT * FROM ' . $table . ' WHERE `id` = ' . $this->help->quote_it( $id );
+	}
+
+	public function update_item_query( $table = false, $params = false ){
+		if( ! $table ) throw new \Exception( 'Missing Table' );
+		if( ! $params ) throw new \Exception( 'Missing Update Params' );
+
 	}
 
 	/**
@@ -89,8 +110,8 @@ class Query_Builder {
 	private function default_table_columns(){
 		return array(
 			'`id` MEDIUMINT NOT NULL AUTO_INCREMENT',
-			'`created_on` DATETIME NOT NULL',
-			'`updated_on` DATETIME NOT NULL',
+			'`created_on` datetime DEFAULT CURRENT_TIMESTAMP',
+			'`updated_on` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
 			'`user` MEDIUMINT NOT NULL'
 		);
 	}
@@ -101,10 +122,7 @@ class Query_Builder {
      * @return Array
      */
     private function set_default_params(){
-        $date = date( 'Y-m-d H:i:s' );
         return array(
-            'created_on' => $date,
-            'updated_on' => $date,
             'user' => get_current_user_id()
         );
     }

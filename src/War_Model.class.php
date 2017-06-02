@@ -19,7 +19,7 @@ class War_Model {
 		$this->model = (object)$model;
 		$this->war_config = $war_config;
 		$this->current_user = $current_user;
-		$this->param_helper = new Param_Helper;
+		$this->param_helper = new Param_Helper( $this->war_config );
 	}
 
     public function register(){
@@ -74,11 +74,14 @@ class War_Model {
 
 	/***** Data Callbacks *****/
 	public function create_item( $data ){
-
-		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params );
-		return $dao->create_item();
+		try {
+			$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+			$db = $this->db_connection( $data->db_info );
+			$dao = new DAO( $db, $this->model, $data->params );
+			return $dao->create_item();
+		} catch( \Exception $e ){
+			return $e->getMessage();
+		}
 
 		// $this->data_object->create_db_connection();
 		// apply_filters( 'war_pre_data_' . $this->model->name, $data, $this->model->params );
@@ -88,16 +91,12 @@ class War_Model {
 
 	public function read_items( $data ){
 
-		try {
+		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
 
-			$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		$db = $this->db_connection( $data->db_info );
+		$dao = new DAO( $db, $this->model, $data->params );
+		return $dao->read_items();
 
-			$db = $this->db_connection( $data->db_info );
-			$dao = new DAO( $db, $this->model, $data->params );
-			return $dao->read_items();
-		} catch( Exception $e ){
-			return $e->getMessage();
-		}
 
 		// $query = new war_dao_select;
 		// $query->table = $this->model->name;
@@ -140,7 +139,6 @@ class War_Model {
 	}
 
 	public function delete_item( $data ){
-
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
 		$db = $this->db_connection( $data->db_info );
 		$dao = new DAO( $db, $this->model, $data->params );
@@ -157,14 +155,12 @@ class War_Model {
 		}
 		$db_info = (object)$db_info;
 		$db = new \wpdb( $db_info->user, $db_info->password, $db_info->database, $db_info->host );
+		if ( isset( $db->error ) && is_wp_error( $db->error ) ) throw new \Exception( 'Failed to Connect to DB Host ' . $db_info->host );
 		if( isset( $db_info->prefix ) ) $db->prefix = $db_info->prefix;
 		return $db;
 	}
 
 	private function set_model_filters(){
-		// if( ! $this->model->name || empty( $this->model->params ) ) return false;
-		// $this->model->params = $this->param_helper->process_args( $this->model->params );
-
 		if( isset( $this->model->pre_data ) ) add_filter( 'war_pre_data_' . $this->model->name, $this->model->pre_data, 15 );
 		if( isset( $this->model->pre_return ) ) add_filter( 'war_pre_return_' . $this->model->name, $this->model->pre_return, 15 );
 	}

@@ -46,7 +46,7 @@ class War_Init {
 			$this->get_current_user();
 			$this->add_filters();
 			$this->add_actions();
-		} catch( Exception $e ){
+		} catch( \Exception $e ){
 			wp_die( $e->getMessage() );
 		}
 	}

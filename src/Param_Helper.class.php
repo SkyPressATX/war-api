@@ -4,18 +4,30 @@ namespace War_Api\Helpers;
 
 class Param_Helper {
 
+	private $war_config;
+
+	public function __construct( $war_config = array() ){
+		$this->war_config = $war_config;
+	}
+
 	public function get_read_items_params(){
 		return [
 			'filter' => 'array',
 			// 'group' => 'array',
 			'order' => 'array',
-			'limit' => [ 'type' => 'integer', 'default' => 10 ],
-			'page' => [ 'type' => 'integer', 'default' => 1 ]
+			'limit' => [
+				'type' => 'integer',
+				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10
+			],
+			'page' => [
+				'type' => 'integer',
+				'default' => 1
+			]
 		];
 	}
 
 	public function get_request_args( $request = [] ){
-        if( empty( $request ) ) return new WP_Error( 403, 'No Request Object Provided' );
+        if( empty( $request ) ) return new \Exception( 'No Request Object Provided' );
         $data = (object) array();
         $params = ( is_object($request) ) ? $request->get_params() : $request;
 		$data->params = (object)array_filter( $params, function( $k ){
@@ -87,6 +99,12 @@ class Param_Helper {
                     return ($match === 1) ? true : false;
                 };
                 break;
+			case 'date_time':
+			return function($a){
+				$match = preg_match('/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/',$a);
+				return ($match === 1) ? true : false;
+			};
+			break;
             case 'array':
                 return function($a){ return ( is_array($a) || ( is_string( $a ) && preg_match( '/^[^,]+,?/', $a ) ) ); }; //If is string, then it needs to be a CSL
                 break;

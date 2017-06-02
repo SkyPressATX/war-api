@@ -38,12 +38,8 @@ class War_JWT {
         list($token) = sscanf($auth_header, 'Bearer %s');
         if(!$token) return false;
 
-        try {
-            $decoded_token = JWT::decode($token, AUTH_KEY, array('HS256'));
-            return $this->jwt_validate((object)$decoded_token);
-        } catch (Exception $e){
-            return new WP_Error( 403, $e->getMessage() );
-        }
+        $decoded_token = JWT::decode($token, AUTH_KEY, array('HS256'));
+        return $this->jwt_validate((object)$decoded_token);
     }
 
 	private function jwt_validate( $decoded_token ){
@@ -51,7 +47,7 @@ class War_JWT {
         if( $decoded_token->iss != get_bloginfo('url')) $fail = 'Wrong URL';
         if( ! isset($decoded_token->data->user->id) ) $fail = 'No User';
 
-        if(isset($fail)) return new WP_Error(403, 'Invalid Token Params -- ' . $fail);
+        if(isset($fail)) throw new \Exception( 'Invalid Token Params -- ' . $fail);
         return $decoded_token->data->user->id;
     }
 

@@ -15,7 +15,7 @@ class Default_Endpoints {
 
 	public function war_get_home( $data ){
 		$home_id = get_option('page_on_front');
-		if( intval( $home_id ) === 0 || is_wp_error( $home_id ) ) return new WP_Error( 'no_home_page', 'No Home Page was Set' );
+		if( intval( $home_id ) === 0 || is_wp_error( $home_id ) ) return new \Exception( 'No Home Page was Set' );
 		$home_req = new WP_Rest_Request( 'GET', '/wp/v2/pages' );
 		// $home_req->set_param( 'id', $home_id );
 		$home_req->set_query_params([

@@ -38,16 +38,20 @@ class War_Endpoint {
     }
 
     public function endpoint_callback( \WP_REST_Request $request ){
-        $data = $this->param_helper->get_request_args( $request );
-        if( is_wp_error( $data ) ) return $data;
+		try {
+	        $data = $this->param_helper->get_request_args( $request );
+	        if( is_wp_error( $data ) ) return $data;
 
-        $data->war_config = $this->war_config;
-		$data->current_user = $this->current_user;
+	        $data->war_config = $this->war_config;
+			$data->current_user = $this->current_user;
 
-        if( method_exists( $this->endpoint->callback[0], $this->endpoint->callback[1] ) )
-            return call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $data );
-        else
-            return new \WP_Error( 501, 'Endpoint Method Not Found' );
+	        if( method_exists( $this->endpoint->callback[0], $this->endpoint->callback[1] ) )
+	            return call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $data );
+	        else
+	            throw new \Exception( 'Endpoint Method Not Found' );
+		} catch( \Exception $e ){
+			return new \WP_REST_Response( $e->getMessage() );
+		}
     }
 
     public function endpoint_role_check( \WP_REST_Request $request ){
@@ -57,9 +61,9 @@ class War_Endpoint {
 
 	private function endpoint_prep(){
 		if( ! isset( $this->endpoint->uri ) )
-			return new \WP_Error( 'endpoint-error', 'Missing Valid URI' );
+			throw new \Exception( 'Missing Valid URI' );
 		if( ! isset( $this->endpoint->callback ) )
-			return new \WP_Error( 'endpoint-error', 'Missing Valid Callback' );
+			throw new \Exception( 'Missing Valid Callback' );
 
 		if( ! preg_match( '/^\//', $this->endpoint->uri ) )
 			$this->endpoint->uri = '/' . $this->endpoint->uri;
