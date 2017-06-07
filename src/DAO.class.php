@@ -24,14 +24,15 @@ class DAO {
 
 	public function read_items( $table = false, $params = false ){
 		/** First check if the table exists, create it if not **/
-		$table_check = $this->create_table();
-		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $this->db->prefix . $this->model->name );
-
-		$help = new Global_Helpers;
 		if(! $table ) $table = $this->db->prefix . $this->model->name;
 		if( ! $params ) $params = $this->params;
+
+		$table_check = $this->create_table();
+		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $table );
+
+		$help = new Global_Helpers;
 		$read_query = $this->qb->read_items_query( $table, $params );
-		$call = $this->db->get_results( $read_query, OBJECT );
+		$call = $this->db->get_results( $read_query );
 		if( is_wp_error( $call ) ) throw new \Exception( $call->get_error_message() );
 		return $help->numberfy( $call );
 	}
@@ -44,23 +45,28 @@ class DAO {
 		return $this->insert_item();
 	}
 
-	public function read_item( $table = false, $id = false, $assoc_check = true ){
+	public function read_item( $table = false, $find = false, $assoc_check = true, $search = 'id' ){
 		$help = new Global_Helpers;
 		if(! $table ) $table = $this->db->prefix . $this->model->name;
-		if( ! $id ) $id = $this->params->id;
-		$query = $this->qb->read_item_query( $table, $id );
-		$item = $this->db->get_row( $query, OBJECT );
+		if( ! $find ) $find = $this->params->id;
+		$query = $this->qb->read_item_query( $table, $find, $search );
+		$item = $this->db->get_row( $query );
 		if( $assoc_check && isset( $this->model->assoc ) ){
 			array_walk( $this->model->assoc, function( $assoc, $model ) use( $item ){
 				$assoc = (object)$assoc;
 
 				if( ! isset( $assoc->assoc ) || ! isset( $assoc->bind ) ) return;
 				$bind = $assoc->bind;
-				if( ! isset( $item->$bind ) ) return;
 
-				if( $assoc->assoc === 'many' ) $item->$model = $this->read_items( $this->db->prefix . $model, array( $this->model->name => $item->$bind ) );
-				if( $assoc->assoc === 'one' ) $item->$model = $this->read_item( $this->db->prefix . $model, $item->$model, false );
-
+				if( $assoc->assoc === 'many' ){
+					$filter = (object)[ 'filter' => [ $this->model->name . ':eq:' . $item->$bind ] ];
+					if( $assoc->assoc === 'many' ) $item->$model = $this->read_items( $this->db->prefix . $model, $filter );
+				}
+				if( $assoc->assoc === 'one' ){
+					if( ! isset( $item->$model ) || empty( $item->$model ) ) return;
+					$item->$model = $this->read_item( $this->db->prefix . $model, $item->$model, false, $bind );
+				}
+				return;
 			});
 		}
 		return (object)$help->numberfy( $item );
@@ -71,7 +77,8 @@ class DAO {
 		$id = absint( trim( $this->params->id ) );
 		unset( $this->params->id );
 		$this->check_table_columns( $table );
-		return $this->db->update( $this->db->prefix . $this->model->name, (array)$this->params, [ 'id' => $id ] );
+		$this->unset_empty_values();
+		return $this->db->update( $this->db->prefix . $this->model->name, $this->params, [ 'id' => $id ] );
 	}
 
 	public function delete_item(){
@@ -81,10 +88,11 @@ class DAO {
 
 	private function create_table(){
 		$create_table_query = $this->qb->create_table_query( $this->db->prefix . $this->model->name, $this->model->params );
-		return $this->db->query( esc_sql( $create_table_query ) );
+		return $this->db->query( $create_table_query );
 	}
 
 	private function insert_item(){
+		$this->unset_empty_values();
 		$insert_data = $this->qb->insert_data( $this->model->params, $this->params );
 		return $this->db->insert( $this->db->prefix . $this->model->name, $insert_data );
 	}
@@ -92,7 +100,7 @@ class DAO {
 	private function check_table_columns( $table ){
 		$default_col = [ 'id', 'created_on', 'updated_on', 'user' ];
 		$model_col = array_merge( $default_col, array_keys( (array)$this->model->params ) );
-		$t_q = 'SELECT `COLUMN_NAME` FROM INFORMATION_SCHEMA.COLUMNS WHERE `TABLE_NAME` = "' . $table . '"';
+		$t_q = 'SELECT `COLUMN_NAME` FROM INFORMATION_SCHEMA.COLUMNS WHERE `TABLE_NAME` = "' . esc_sql( $table ) . '"';
 		$table_col = $this->db->get_col( $t_q );
 		$remove = array_values( array_diff( $table_col, $model_col ) );
 		$add = array_values( array_diff( $model_col, $table_col ) );
@@ -108,8 +116,17 @@ class DAO {
 			if( isset( $add_col ) ) $add_query = $this->qb->add_col_query( $table, $add_col );
 		}
 
-		if( isset( $remove_query ) ) $r_call = $this->db->query( esc_sql( $remove_query ) );
-		if( isset( $add_query ) ) $a_call = $this->db->query( esc_sql( $add_query ) );
+		if( isset( $remove_query ) ) $r_call = $this->db->query( $remove_query );
+		if( isset( $add_query ) ) $a_call = $this->db->query( $add_query );
+	}
+
+	private function unset_empty_values(){
+		$params = (array)$this->params;
+		array_walk( $params, function( &$p, $k ){
+			if( is_bool( $p ) && $p === false ) $p = (int)0;
+			if( is_string( $p ) && empty( $p ) ) unset( $this->params->$k );
+		});
+		$this->params = $params;
 	}
 
 }

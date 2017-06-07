@@ -102,7 +102,7 @@ class Query_Search {
 
 	private function build_order_query( $order ){
 		$o = explode( ':', strtolower( $order ) );
-		$order_by = trim( $o[0] );
+		$order_by = esc_sql( trim( $o[0] ) );
 		if( sizeof( $o ) > 1 ){
 			$d = strtoupper( trim( $o[1] ) );
 			if( in_array( $d, [ 'ASC', 'DESC' ] ) ) $direction = $d;
