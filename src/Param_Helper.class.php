@@ -22,7 +22,19 @@ class Param_Helper {
 			'page' => [
 				'type' => 'integer',
 				'default' => 1
-			]
+			],
+			'sideLoad' => 'bool',
+			'sideSearch' => 'array'
+		];
+	}
+
+	public function get_read_item_params(){
+		return [
+			'sideLoad' => [
+				'type' => 'bool',
+				'default' => true
+			],
+			'sideSearch' => 'array'
 		];
 	}
 

@@ -5,6 +5,7 @@ namespace War_Api\Data;
 use War_Api\Data\Query_Builder as Query;
 use War_Api\Security\Role_Check as Role_Check;
 use War_Api\Helpers\Global_Helpers as Global_Helpers;
+use War_Api\Data\Data_Assoc as Data_Assoc;
 
 class DAO {
 
@@ -12,28 +13,36 @@ class DAO {
 	private $model;
 	private $params;
 	private $qb;
+	private $war_config;
 
-	public function __construct( $wpdb = array(), $model = array(), $params = array() ){
+	public function __construct( $wpdb = array(), $model = array(), $params = array(), $war_config = array() ){
 		if( empty( $wpdb ) ) global $wpdb;
 
 		$this->db = $wpdb;
 		$this->model = $model;
 		$this->params = $params;
+		$this->war_config = $war_config;
 		$this->qb = new Query;
 	}
 
-	public function read_items( $table = false, $params = false ){
+	public function read_items(){
 		/** First check if the table exists, create it if not **/
-		if(! $table ) $table = $this->db->prefix . $this->model->name;
-		if( ! $params ) $params = $this->params;
-
+		$table = $this->db->prefix . $this->model->name;
 		$table_check = $this->create_table();
 		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $table );
 
 		$help = new Global_Helpers;
-		$read_query = $this->qb->read_items_query( $table, $params );
+		$read_query = $this->qb->read_items_query( $table, $this->params );
 		$call = $this->db->get_results( $read_query );
 		if( is_wp_error( $call ) ) throw new \Exception( $call->get_error_message() );
+		if( $this->params->sideLoad || $this->params->sideSearch ){
+			array_walk( $call, function( &$item ){
+				$params = (object)[];
+				$params->filter = ( $this->params->sideSearch ) ? $this->params->sideSearch : [];
+				$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );
+				$item = $da->get_assoc_data( $item );
+			});
+		}
 		return $help->numberfy( $call );
 	}
 
@@ -45,29 +54,17 @@ class DAO {
 		return $this->insert_item();
 	}
 
-	public function read_item( $table = false, $find = false, $assoc_check = true, $search = 'id' ){
+	public function read_item( $table = false, $find = false, $search = 'id' ){
 		$help = new Global_Helpers;
 		if(! $table ) $table = $this->db->prefix . $this->model->name;
 		if( ! $find ) $find = $this->params->id;
 		$query = $this->qb->read_item_query( $table, $find, $search );
 		$item = $this->db->get_row( $query );
-		if( $assoc_check && isset( $this->model->assoc ) ){
-			array_walk( $this->model->assoc, function( $assoc, $model ) use( $item ){
-				$assoc = (object)$assoc;
-
-				if( ! isset( $assoc->assoc ) || ! isset( $assoc->bind ) ) return;
-				$bind = $assoc->bind;
-
-				if( $assoc->assoc === 'many' ){
-					$filter = (object)[ 'filter' => [ $this->model->name . ':eq:' . $item->$bind ] ];
-					if( $assoc->assoc === 'many' ) $item->$model = $this->read_items( $this->db->prefix . $model, $filter );
-				}
-				if( $assoc->assoc === 'one' ){
-					if( ! isset( $item->$model ) || empty( $item->$model ) ) return;
-					$item->$model = $this->read_item( $this->db->prefix . $model, $item->$model, false, $bind );
-				}
-				return;
-			});
+		if( $this->params->sideLoad || $this->params->sideSearch ){
+			$params = (object)[];
+			$params->filter = ( $this->params->sideSearch ) ? $this->params->sideSearch : [];
+			$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );
+			$item = $da->get_assoc_data( $item );
 		}
 		return (object)$help->numberfy( $item );
 	}

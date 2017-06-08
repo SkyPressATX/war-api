@@ -54,7 +54,8 @@ class War_Model {
 				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
 				'method'	=> \WP_REST_Server::READABLE,
 				'callback'  => ( isset( $this->method->callback->read_one ) ) ? $this->method->callback->read_one : [ $this, 'read_item' ],
-				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access
+				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
+				'params'	=> $this->param_helper->get_read_item_params()
 			],
 			'edit_item' => [
 				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
@@ -77,16 +78,11 @@ class War_Model {
 		try {
 			$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
 			$db = $this->db_connection( $data->db_info );
-			$dao = new DAO( $db, $this->model, $data->params );
+			$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 			return $dao->create_item();
 		} catch( \Exception $e ){
 			return $e->getMessage();
 		}
-
-		// $this->data_object->create_db_connection();
-		// apply_filters( 'war_pre_data_' . $this->model->name, $data, $this->model->params );
-		// $created = $this->data_object->create_item( $this->model->name, $data, $this->model->params );
-		// return $created;
 	}
 
 	public function read_items( $data ){
@@ -94,23 +90,18 @@ class War_Model {
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
 
 		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params );
-		return $dao->read_items();
+		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
+		$items = $dao->read_items();
 
+		if( sizeof( $items ) <= 0 || empty( $items ) ) return apply_filters( 'war_pre_return_' . $this->model->name, $items );
+		if( ! isset( $this->model->pre_return ) ) return $items;
+		
+		array_walk( $items, function( &$item ){
+			$item = apply_filters( 'war_pre_return_' . $this->model->name, $item );
+		});
 
-		// $query = new war_dao_select;
-		// $query->table = $this->model->name;
-		// $query->filters = $data->params;
-		// $query->limit = 10;
-		//
-		// print_r( $query->get_query() );
-		//
-		// $this->data_object->create_db_connection();
-		// $result = $this->data_object->get_items( $this->model->name, $data );
-		// array_walk( $result, function( &$res ){
-		// 	$res = apply_filters( 'war_pre_return_' . $this->model->name, $res );
-		// });
-		// return $result;
+		return $items;
+
 	}
 
 	public function read_item( $data ){
@@ -118,34 +109,27 @@ class War_Model {
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
 
 		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params );
-		return $dao->read_item();
-		// $assoc = ( isset( $this->model->assoc ) ) ? $this->model->assoc : false;
-		// $this->data_object->create_db_connection();
-		// $item = $this->data_object->data_model_get_one( $this->model->name, $data, $assoc );
-		// $result = apply_filters( 'war_pre_return_' . $this->model->name, $item );
-		// return $result;
+		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
+		$item = $dao->read_item();
+
+		$result = apply_filters( 'war_pre_return_' . $this->model->name, $item );
+		return $result;
+
 	}
 
 	public function update_item( $data ){
 
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
 		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params );
+		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 		return $dao->update_item();
-
-		// $this->data_object->create_db_connection();
-		// return $this->data_object->data_model_update_one( $this->model->name, $data );
 	}
 
 	public function delete_item( $data ){
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
 		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params );
+		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 		return $dao->delete_item();
-
-		// $this->data_object->create_db_connection();
-		// return $this->data_object->data_model_delete_one( $this->model->name, $data );
 	}
 
 	private function db_connection( $db_info = array() ){
