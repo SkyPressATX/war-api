@@ -64,7 +64,7 @@ class Data_Assoc {
 		foreach( $params as $k => $v ){
 			if( ! empty( $v ) ) $req->set_param( $k, $v );
 		}
-		$req->set_param( [ 'sideLoad' => false ] );
+		$req->set_param( 'sideLoad', false );
 
 		$result = rest_do_request( $req );
 		return $result->get_data();
