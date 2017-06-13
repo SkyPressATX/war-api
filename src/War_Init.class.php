@@ -51,6 +51,17 @@ class War_Init {
 		}
 	}
 
+	// public function test_discover_data( $res, $req ){
+	// 	array_walk( $res, function( &$r ){
+	// 		if( $r[ 'namespace' ] !== $this->war_config->namespace ) return;
+	// 		$r[ 'documentation' ] = [
+	// 			'can' => 'stuff',
+	// 			'wont' => 'that'
+	// 		];
+	// 	});
+	// 	return $res;
+	// }
+
 	private function get_current_user(){
 		$war_user = new War_User;
 		$this->current_user = $war_user->get_user();
@@ -62,6 +73,7 @@ class War_Init {
 			add_action( 'init', [ $this->help, 'rewrite_flush' ] );
 		}
 
+		// add_filteR( 'rest_route_data', [ $this, 'test_discover_data' ], 10, 2 );
 		add_filter( 'request', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
 	}
 

@@ -2,7 +2,7 @@
 /*
 Plugin Name: WAR API
 Description:  WAR API
-Version: 0.2.0
+Version: 0.1.9
 Author: BMO
 License: MIT
 */
