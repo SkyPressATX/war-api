@@ -1,16 +1,21 @@
 <?php
 
+namespace War_Api\Security;
+
 use \Firebase\JWT\JWT;
 
-class war_jwt {
+class War_JWT {
 
-	public function jwt_key_create( $id = false ){
-        if( ! $id ) {
-            $cu = wp_get_current_user();
-            $id = $cu->ID;
-        }
+	private $jwt_expire;
+	private $user_id;
 
-        if( $id == 0 ) return new WP_Error(403, 'No Active User' );
+
+	public function __construct( $jwt_expire = false, $user_id = 0 ){
+		$this->jwt_expire = $jwt_expire;
+		$this->user_id = $user_id;
+	}
+
+	public function jwt_key_create(){
 
         $time = time();
         $token = array(
@@ -19,15 +24,11 @@ class war_jwt {
             'nbf' => $time,
             'data' => array(
                 'user' => array(
-                    'id' => $id
+                    'id' => $this->user_id
                 )
-            )
+            ),
+			'exp' => $this->jwt_expire
         );
-
-        $e = $time + (DAY_IN_SECONDS * 30);
-        $exp = apply_filters( 'war_jwt_expire', $e );
-
-        if( $exp !== FALSE ) $token[ 'exp' ] = $exp;
 
         return JWT::encode( $token, AUTH_KEY );
     }
@@ -37,12 +38,8 @@ class war_jwt {
         list($token) = sscanf($auth_header, 'Bearer %s');
         if(!$token) return false;
 
-        try {
-            $decoded_token = JWT::decode($token, AUTH_KEY, array('HS256'));
-            return $this->jwt_validate((object)$decoded_token);
-        } catch (Exception $e){
-            return new WP_Error( 403, $e->getMessage() );
-        }
+        $decoded_token = JWT::decode($token, AUTH_KEY, array('HS256'));
+        return $this->jwt_validate((object)$decoded_token);
     }
 
 	private function jwt_validate( $decoded_token ){
@@ -50,8 +47,7 @@ class war_jwt {
         if( $decoded_token->iss != get_bloginfo('url')) $fail = 'Wrong URL';
         if( ! isset($decoded_token->data->user->id) ) $fail = 'No User';
 
-        if(isset($fail)) return new WP_Error(403, 'Invalid Token Params -- ' . $fail);
-
+        if(isset($fail)) throw new \Exception( 'Invalid Token Params -- ' . $fail);
         return $decoded_token->data->user->id;
     }
 

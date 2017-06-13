@@ -1,27 +1,51 @@
 <?php
 
-class war_arg_helper {
+namespace War_Api\Helpers;
 
-    public function get_request_args( $request = [], $war_config = [] ){
-        if( empty( $request ) ) return new WP_Error( 403, 'No Request Object Provided' );
+class Param_Helper {
+
+	private $war_config;
+
+	public function __construct( $war_config = array() ){
+		$this->war_config = $war_config;
+	}
+
+	public function get_read_items_params(){
+		return [
+			'filter' => 'array',
+			// 'group' => 'array',
+			'order' => 'array',
+			'limit' => [
+				'type' => 'integer',
+				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10
+			],
+			'page' => [
+				'type' => 'integer',
+				'default' => 1
+			],
+			'sideLoad' => 'bool',
+			'sideSearch' => 'array'
+		];
+	}
+
+	public function get_read_item_params(){
+		return [
+			'sideLoad' => [
+				'type' => 'bool',
+				'default' => true
+			],
+			'sideSearch' => 'array'
+		];
+	}
+
+	public function get_request_args( $request = [] ){
+        if( empty( $request ) ) return new \Exception( 'No Request Object Provided' );
         $data = (object) array();
-        $data->params = ( is_object($request) ) ? (object) $request->get_params() : (object) $request;
-        $cu = apply_filters( 'war_set_current_user', wp_get_current_user() );
-        $data->current_user = (object) [
-            'id' => $cu->ID,
-            'email' => $cu->data->user_email,
-            'role' => $cu->roles[0],
-            'caps' => array_keys( array_filter( $cu->allcaps, function( $c ){ return $c; } ) )
-        ];
-        if( isset( $war_config->user_groups ) ) $data->current_user->groups = get_user_option( 'user_groups' );
+        $params = ( is_object($request) ) ? $request->get_params() : $request;
+		$data->params = (object)array_filter( $params, function( $k ){
+			return ( ! is_numeric( $k ) );
+		}, ARRAY_FILTER_USE_KEY );
         return $data;
-    }
-
-    public function get_auth_headers( $request ){
-        return [
-            'jwt' => $request->get_header( 'authorization' ),
-            'nonce' => $request->get_header( 'x-wp-nonce' )
-        ];
     }
 
     public function process_args( $args = array() ){
@@ -75,6 +99,9 @@ class war_arg_helper {
             case 'string':
                 return function($a){ return ( is_string( $a ) || is_bool( $a ) ); };
                 break;
+            case 'text':
+                return function($a){ return ( is_string( $a ) ); };
+                break;
             case 'integer':
                 return function($a){ return is_numeric( $a ); };
                 break;
@@ -84,6 +111,12 @@ class war_arg_helper {
                     return ($match === 1) ? true : false;
                 };
                 break;
+			case 'date_time':
+			return function($a){
+				$match = preg_match('/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/',$a);
+				return ($match === 1) ? true : false;
+			};
+			break;
             case 'array':
                 return function($a){ return ( is_array($a) || ( is_string( $a ) && preg_match( '/^[^,]+,?/', $a ) ) ); }; //If is string, then it needs to be a CSL
                 break;
@@ -120,5 +153,4 @@ class war_arg_helper {
             return $a;
         };
     }
-
 }
