@@ -61,7 +61,7 @@ class War_Init {
 		if( $this->war_config->api_prefix !== $old_prefix ) add_action( 'init', [ $this->help, 'rewrite_flush' ] );
 		add_filter( 'rest_url_prefix', [ $this->auto_config, 'set_api_prefix' ], 99 );
 
-		add_filter( 'request', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
+		add_filter( 'status_header', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
 	}
 
 	private function add_actions(){
@@ -122,9 +122,9 @@ class War_Init {
 	 * @param Array $request Request Array provided by the Request Filter.
 	 * @return Array If Error is a 404 return empty array, else return original $request.
 	 **/
-	public function handle_missing_requests( $request ){
-        if( isset( $request[ 'error' ] ) && intval( $request[ 'error' ] ) == 404 ) return [];
-        return $request;
+	public function handle_missing_requests( $status_header ){
+		if( preg_match( '/.+\s404\s.+/', $status_header ) ) return 'HTTP/1.1 200 ' . $ok;
+		return $status_header;
 	}
 
 }

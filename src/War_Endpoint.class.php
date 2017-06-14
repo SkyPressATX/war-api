@@ -70,5 +70,8 @@ class War_Endpoint {
 
 		if( isset( $this->endpoint->params ) )
 			$this->endpoint->params = $this->param_helper->process_args( $this->endpoint->params );
+
+		if( ! isset( $this->endpoint->access ) )
+			$this->endpoint->access = $this->war_config->default_access;
 	}
 }
