@@ -4,6 +4,6 @@
 
 The WAR Framework de-couples the front and back ends of WordPress.
 
-For more details, please view our Wiki: https://github.com/SkyPressATX/war-api/wiki/Getting-Started
+For more details, please view our Wiki: https://github.com/SkyPressATX/war-api/wiki
 
 *Documentation is an ongoing process*
