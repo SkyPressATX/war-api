@@ -9,7 +9,10 @@ class Global_Helpers {
         $old_prefix = NULL;
         if( ! is_array( $rewrite_rules ) ) return $old_prefix;
         foreach( $rewrite_rules as $rule => $dest ){
-            if( $dest === 'index.php?rest_route=/' ) $old_prefix = preg_replace( '/[^a-z]*/', '', $rule );
+            if( $dest === 'index.php?rest_route=/' ){
+				$old_prefix = preg_replace( '/[^a-z-]*/', '', $rule );
+				break;
+			}
         }
         return $old_prefix;
 	}
@@ -34,7 +37,7 @@ class Global_Helpers {
     }
 
 	public function rewrite_flush(){
-        flush_rewrite_rules();
+		flush_rewrite_rules( false );
     }
 
 	public function quote_it( $x ){

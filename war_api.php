@@ -2,7 +2,7 @@
 /*
 Plugin Name: WAR API
 Description:  WAR API
-Version: 0.1.9
+Version: 0.1.9.1
 Author: BMO
 License: MIT
 */
@@ -60,7 +60,8 @@ class War_Api {
 
     public function init(){
         $war_init = new War_Init( $this->config, $this->endpoints, $this->models );
-        add_action( 'init', [ $war_init, 'init' ] );
+        $war_init->init();
+        // add_action( 'init', [ $war_init, 'init' ] );
     }
 
 } // END War_Api class
