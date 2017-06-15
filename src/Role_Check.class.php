@@ -17,7 +17,7 @@ class Role_Check {
 
 		if( $this->required_role === false && $this->current_user->auth === 'NONCE' ) return true; //Access only via the Front End
 
-		if( ! $this->current_user ) return false; //Should be logged in at this point
+		if( ! $this->current_user || $this->current_user->id === (int)0 ) return false; //Should be logged in at this point
 
 		if( $this->required_role === true ) return true; // If logged in, then give access
 
