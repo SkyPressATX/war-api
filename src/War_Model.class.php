@@ -74,24 +74,24 @@ class War_Model {
     }
 
 	/***** Data Callbacks *****/
-	public function create_item( $data ){
+	public function create_item( $request ){
 		try {
-			$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-			if( ! isset( $data->db_info ) ) $data->db_info = array();
-			$db = $this->db_connection( $data->db_info );
-			$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
+			$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
+			if( ! isset( $request->db_info ) ) $request->db_info = array();
+			$db = $this->db_connection( $request->db_info );
+			$dao = new DAO( $db, $this->model, $request->params, $this->war_config );
 			return $dao->create_item();
 		} catch( \Exception $e ){
 			return $e->getMessage();
 		}
 	}
 
-	public function read_items( $data ){
+	public function read_items( $request ){
 
-		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-		if( ! isset( $data->db_info ) ) $data->db_info = array();
-		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
+		$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
+		if( ! isset( $request->db_info ) ) $request->db_info = array();
+		$db = $this->db_connection( $request->db_info );
+		$dao = new DAO( $db, $this->model, $request->params, $this->war_config );
 		$items = $dao->read_items();
 
 		if( sizeof( $items ) <= 0 || empty( $items ) ) return apply_filters( 'war_pre_return_' . $this->model->name, $items );
@@ -105,12 +105,12 @@ class War_Model {
 
 	}
 
-	public function read_item( $data ){
+	public function read_item( $request ){
 
-		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-		if( ! isset( $data->db_info ) ) $data->db_info = array();
-		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
+		$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
+		if( ! isset( $request->db_info ) ) $request->db_info = array();
+		$db = $this->db_connection( $request->db_info );
+		$dao = new DAO( $db, $this->model, $request->params, $this->war_config );
 		$item = $dao->read_item();
 
 		$result = apply_filters( 'war_pre_return_' . $this->model->name, $item );
@@ -118,20 +118,20 @@ class War_Model {
 
 	}
 
-	public function update_item( $data ){
+	public function update_item( $request ){
 
-		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-		if( ! isset( $data->db_info ) ) $data->db_info = array();
-		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
+		$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
+		if( ! isset( $request->db_info ) ) $request->db_info = array();
+		$db = $this->db_connection( $request->db_info );
+		$dao = new DAO( $db, $this->model, $request->params, $this->war_config );
 		return $dao->update_item();
 	}
 
-	public function delete_item( $data ){
-		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-		if( ! isset( $data->db_info ) ) $data->db_info = array();
-		$db = $this->db_connection( $data->db_info );
-		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
+	public function delete_item( $request ){
+		$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
+		if( ! isset( $request->db_info ) ) $request->db_info = array();
+		$db = $this->db_connection( $request->db_info );
+		$dao = new DAO( $db, $this->model, $request->params, $this->war_config );
 		return $dao->delete_item();
 	}
 
