@@ -28,7 +28,7 @@ class War_User {
 	}
 
 	private function set_wp_user( $user_id = 0 ){
-		set_current_user( $user_id );
+		wp_set_current_user( $user_id );
 		$this->current_user = wp_get_current_user();
 	}
 
