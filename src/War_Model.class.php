@@ -77,6 +77,7 @@ class War_Model {
 	public function create_item( $data ){
 		try {
 			$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+			if( ! isset( $data->db_info ) ) $data->db_info = array();
 			$db = $this->db_connection( $data->db_info );
 			$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 			return $dao->create_item();
@@ -88,7 +89,7 @@ class War_Model {
 	public function read_items( $data ){
 
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-
+		if( ! isset( $data->db_info ) ) $data->db_info = array();
 		$db = $this->db_connection( $data->db_info );
 		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 		$items = $dao->read_items();
@@ -107,7 +108,7 @@ class War_Model {
 	public function read_item( $data ){
 
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
-
+		if( ! isset( $data->db_info ) ) $data->db_info = array();
 		$db = $this->db_connection( $data->db_info );
 		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 		$item = $dao->read_item();
@@ -120,6 +121,7 @@ class War_Model {
 	public function update_item( $data ){
 
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		if( ! isset( $data->db_info ) ) $data->db_info = array();
 		$db = $this->db_connection( $data->db_info );
 		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 		return $dao->update_item();
@@ -127,6 +129,7 @@ class War_Model {
 
 	public function delete_item( $data ){
 		$data = apply_filters( 'war_pre_data_' . $this->model->name, $data );
+		if( ! isset( $data->db_info ) ) $data->db_info = array();
 		$db = $this->db_connection( $data->db_info );
 		$dao = new DAO( $db, $this->model, $data->params, $this->war_config );
 		return $dao->delete_item();
