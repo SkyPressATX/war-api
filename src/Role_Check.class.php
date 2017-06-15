@@ -13,7 +13,7 @@ class Role_Check {
 	}
 
 	public function has_access(){
-		if( $this->required_role === NULL ) return true; //Open access for all
+		if( $this->required_role === 'null' ) return true; //Open access for all
 
 		if( $this->required_role === false && $this->current_user->auth === 'NONCE' ) return true; //Access only via the Front End
 
