@@ -39,14 +39,14 @@ class War_Endpoint {
 
     public function endpoint_callback( \WP_REST_Request $request ){
 		try {
-	        $data = $this->param_helper->get_request_args( $request );
-	        if( is_wp_error( $data ) ) return $data;
+	        $war_request = $this->param_helper->get_request_args( $request );
+	        if( is_wp_error( $war_request ) ) throw new \Exception( $war_request->getMessage() );
 
-	        $data->war_config = $this->war_config;
-			$data->current_user = $this->current_user;
+	        $war_request->war_config = $this->war_config;
+			$war_request->current_user = $this->current_user;
 
 	        if( method_exists( $this->endpoint->callback[0], $this->endpoint->callback[1] ) )
-	            return call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $data );
+	            return call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $war_request );
 	        else
 	            throw new \Exception( 'Endpoint Method Not Found' );
 		} catch( \Exception $e ){
@@ -72,7 +72,7 @@ class War_Endpoint {
 			$this->endpoint->params = $this->param_helper->process_args( $this->endpoint->params );
 
 		if( $this->endpoint->access === null ) $this->endpoint->access = 'null';
-		
+
 		if( ! isset( $this->endpoint->access ) )
 			$this->endpoint->access = $this->war_config->default_access;
 	}
