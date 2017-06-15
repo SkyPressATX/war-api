@@ -39,35 +39,35 @@ class War_Model {
 			'read_items' => [
 				'uri' 		=> '/' . $this->model->name,
 				'method'	=> \WP_REST_Server::READABLE,
-				'callback' 	=> ( isset( $this->method->callback->get_all ) ) ? $this->method->callback->get_all : [ $this, 'read_items' ],
+				'callback' 	=> ( isset( $this->method->callback->read_items ) ) ? $this->method->callback->read_items : [ $this, 'read_items' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
 				'params'	=> $this->param_helper->get_read_items_params()
 			],
 			'create_item' => [
 				'uri' 		=> '/' . $this->model->name,
 				'method' 	=> \WP_REST_Server::CREATABLE,
-				'callback' 	=> ( isset( $this->method->callback->create_one ) ) ? $this->method->callback->create_one : [ $this, 'create_item' ],
+				'callback' 	=> ( isset( $this->method->callback->create_item ) ) ? $this->method->callback->create_item : [ $this, 'create_item' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->create : $this->model->access,
 				'params'	=> $this->model->params
 			],
 			'read_item' => [
 				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
 				'method'	=> \WP_REST_Server::READABLE,
-				'callback'  => ( isset( $this->method->callback->read_one ) ) ? $this->method->callback->read_one : [ $this, 'read_item' ],
+				'callback'  => ( isset( $this->method->callback->read_item ) ) ? $this->method->callback->read_item : [ $this, 'read_item' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
 				'params'	=> $this->param_helper->get_read_item_params()
 			],
 			'edit_item' => [
 				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
 				'method'    => \WP_REST_Server::EDITABLE,
-				'callback'  => ( isset( $this->method->callback->edit_one ) ) ? $this->method->callback->edit_one : [ $this, 'update_item' ],
+				'callback'  => ( isset( $this->method->callback->update_item ) ) ? $this->method->callback->update_item : [ $this, 'update_item' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->update : $this->model->access,
 				'params'	=> $this->strip_required( $this->model->params )
 			],
 			'delete_item' => [
 				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
 				'method'    => \WP_REST_Server::DELETABLE,
-				'callback'  => ( isset( $this->method->callback->delete_one ) ) ? $this->method->callback->delete_one : [ $this, 'delete_item' ],
+				'callback'  => ( isset( $this->method->callback->delete_item ) ) ? $this->method->callback->delete_item : [ $this, 'delete_item' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->delete : $this->model->access
 			]
 		];
