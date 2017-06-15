@@ -95,7 +95,7 @@ class War_Model {
 
 		if( sizeof( $items ) <= 0 || empty( $items ) ) return apply_filters( 'war_pre_return_' . $this->model->name, $items );
 		if( ! isset( $this->model->pre_return ) ) return $items;
-		
+
 		array_walk( $items, function( &$item ){
 			$item = apply_filters( 'war_pre_return_' . $this->model->name, $item );
 		});
@@ -168,10 +168,10 @@ class War_Model {
 		}
 		$user_roles = array_reverse( (array) $this->war_config->user_roles );
 		$defaults = array(
-			'create' => $user_roles[1],
-			'read' => $user_roles[0],
-			'update' => $user_roles[1],
-			'delete' => $user_roles[1]
+			'create' => $this->war_config->default_access,
+			'read' => $this->war_config->default_access,
+			'update' => $this->war_config->default_access,
+			'delete' => $this->war_config->default_access
 		);
 		$this->access_levels = (object)array_merge( $defaults, $this->model->access );
 	}

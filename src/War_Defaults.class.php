@@ -24,7 +24,7 @@ class War_Defaults {
             'user_roles' => [],
             'version' => 1,
             'permalink' => '/posts/%postname%/',
-            'category_base' => 'category'
+			'default_access' => false
         ];
 	}
 
@@ -35,11 +35,6 @@ class War_Defaults {
 	public function set_endpoints(){
 		$de = new DE;
 		return [
-			// 'build_tables' => [
-			// 	'uri' => '/data-model-setup',
-			// 	'access' => 'administrator',
-			// 	'callback' => [ $de, 'war_build_tables' ]
-			// ],
 			// 'jwt_token' => [
 			// 	'uri' => '/jwt-token',
 			// 	'access' => true,
@@ -90,11 +85,6 @@ class War_Defaults {
 			// 		]
 			// 	],
 			// 	'callback' => [ $de, 'war_signup' ]
-			// ],
-			// 'set_config' => [
-			// 	'uri' => '/run-app-config',
-			// 	'access' => 'administrator',
-			// 	'callback' => [ $de, 'war_app_config' ]
 			// ],
 			'get_home_page' => [
 				'uri' => '/home',

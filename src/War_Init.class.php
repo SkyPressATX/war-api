@@ -51,30 +51,17 @@ class War_Init {
 		}
 	}
 
-	// public function test_discover_data( $res, $req ){
-	// 	array_walk( $res, function( &$r ){
-	// 		if( $r[ 'namespace' ] !== $this->war_config->namespace ) return;
-	// 		$r[ 'documentation' ] = [
-	// 			'can' => 'stuff',
-	// 			'wont' => 'that'
-	// 		];
-	// 	});
-	// 	return $res;
-	// }
-
 	private function get_current_user(){
 		$war_user = new War_User;
 		$this->current_user = $war_user->get_user();
 	}
 
 	private function add_filters(){
-		if( $this->war_config->api_prefix != $this->help->get_old_rest_api_prefix() ){
-			add_filter( 'rest_url_prefix', [ $this->auto_config, 'set_api_prefix' ] );
-			add_action( 'init', [ $this->help, 'rewrite_flush' ] );
-		}
+		$old_prefix = $this->help->get_old_rest_api_prefix();
+		if( $this->war_config->api_prefix !== $old_prefix ) add_action( 'init', [ $this->help, 'rewrite_flush' ] );
+		add_filter( 'rest_url_prefix', [ $this->auto_config, 'set_api_prefix' ], 99 );
 
-		// add_filteR( 'rest_route_data', [ $this, 'test_discover_data' ], 10, 2 );
-		add_filter( 'request', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
+		add_filter( 'status_header', [ $this, 'handle_missing_requests' ] ); // Important for the AngularJS aspect of the WAR Framework
 	}
 
 	private function add_actions(){
@@ -135,9 +122,9 @@ class War_Init {
 	 * @param Array $request Request Array provided by the Request Filter.
 	 * @return Array If Error is a 404 return empty array, else return original $request.
 	 **/
-	public function handle_missing_requests( $request ){
-        if( isset( $request[ 'error' ] ) && intval( $request[ 'error' ] ) == 404 ) return [];
-        return $request;
+	public function handle_missing_requests( $status_header ){
+		if( preg_match( '/.+\s404\s.+/', $status_header ) ) return 'HTTP/1.1 200 ' . $ok;
+		return $status_header;
 	}
 
 }
