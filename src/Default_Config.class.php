@@ -19,7 +19,8 @@ class Default_Config {
             'version' => 1,
             'permalink' => '/posts/%postname%/',
             'category_base' => 'category',
-			'jwt_expire' => ( time() + ( DAY_IN_SECONDS * 30 ) )
+			'jwt_expire' => ( time() + ( DAY_IN_SECONDS * 30 ) ),
+			'isolate_user_data' => true
         ];
 	}
 

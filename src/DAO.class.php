@@ -10,20 +10,23 @@ use War_Api\Data\Data_Assoc as Data_Assoc;
 class DAO {
 
 	private $db;
+	private $request;
 	private $model;
 	private $params;
 	private $qb;
 	private $war_config;
 	private $table;
 
-	public function __construct( $wpdb = array(), $model = array(), $params = array(), $war_config = array() ){
+	public function __construct( $wpdb = array(), $model = array(), $request = array(), $war_config = array() ){
 		if( empty( $wpdb ) ) global $wpdb;
 
 		$this->db = $wpdb;
+		$this->request = $request;
 		$this->model = $model;
-		$this->params = $params;
+		$this->params = $this->request->params;
 		$this->war_config = $war_config;
-		$this->qb = new Query;
+		$this->isolate = $this->determine_isolation();
+		$this->qb = new Query( $this->isolate );
 		$this->table = $this->get_table_name();
 	}
 
@@ -31,6 +34,8 @@ class DAO {
 		/** First check if the table exists, create it if not **/
 		$table_check = $this->create_table();
 		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $this->table );
+
+		$this->add_current_user_to_filter();
 
 		$help = new Global_Helpers;
 		$read_query = $this->qb->read_items_query( $this->table, $this->params );
@@ -55,33 +60,35 @@ class DAO {
 		return $this->insert_item();
 	}
 
-	// public function read_item( $table = false, $find = false, $search = 'id' ){
 	public function read_item(){
-		$help = new Global_Helpers;
-		// if(! $table ) $table = $this->db->prefix . $this->model->name;
-		// if( ! $find ) $find = $this->params->id;
-		$query = $this->qb->read_item_query( $this->table, $this->params->id, 'id' );
-		$item = $this->db->get_row( $query );
-		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || isset( $this->params->sideSearch ) ) ){
-			$params = (object)[];
-			$params->filter = ( $this->params->sideSearch ) ? $this->params->sideSearch : [];
-			$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );
-			$item = $da->get_assoc_data( $item );
-		}
-		return (object)$help->numberfy( $item );
+
+		$this->params->filter = [ 'id:eq:' . $this->params->id ];
+		unset( $this->params->id );
+
+		$item = $this->read_items();
+		return $item[0]; //Should only ever be one
 	}
 
 	public function update_item(){
 		$id = absint( trim( $this->params->id ) );
 		unset( $this->params->id );
+
 		$this->check_table_columns();
 		$this->unset_empty_values();
-		return $this->db->update( $this->table, $this->params, [ 'id' => $id ] );
+
+		$update_on_array = [ 'id' => $id ];
+		if( $this->isolate ) $update_on_array[ 'user' ] = $this->request->current_user->id;
+
+		return $this->db->update( $this->table, $this->params, $update_on_array );
 	}
 
 	public function delete_item(){
 		if( ! isset( $this->params->id ) ) throw new \Exceptions( 'No ID Provided' );
-		return $this->db->delete( $this->table, [ 'id' => absint( trim( $this->params->id ) ) ] );
+
+		$delete_on_array = [ 'id' => absint( trim( $this->params->id ) ) ];
+		if( $this->isolate ) $delete_on_array[ 'user' ] = $this->request->current_user->id;
+		
+		return $this->db->delete( $this->table, $delete_on_array );
 	}
 
 	private function create_table(){
@@ -127,11 +134,24 @@ class DAO {
 		$this->params = $params;
 	}
 
+	private function determine_isolation(){
+		$isolate = $this->war_config->isolate_user_data;
+		if( isset( $this->model->isolate_user_data ) ) $isolate = $this->model->isolate_user_data;
+		return $isolate;
+	}
+
+	private function add_current_user_to_filter(){
+		if( ! $this->isolate ) return;
+		// if( ! isset( $this->request->current_user ) ) return;
+
+		if( empty( $this->params ) ) $this->params = [ 'filter' => [] ];
+		$this->params->filter[] =  'user:eq:' . $this->request->current_user->id;
+	}
+
 	private function get_table_name(){
 		$table = $this->db->prefix;
 		$table .= ( isset( $this->model->table_prefix ) ) ? $this->model->table_prefix : $this->war_config->api_name . '_';
 		$table .= $this->model->name;
 		return $table;
 	}
-
 }

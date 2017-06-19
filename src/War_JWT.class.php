@@ -26,9 +26,10 @@ class War_JWT {
                 'user' => array(
                     'id' => $this->user_id
                 )
-            ),
-			'exp' => $this->jwt_expire
+            )
         );
+
+		if( $this->jwt_expire ) $token[ 'exp' ] = $this->jwt_expire;
 
         return JWT::encode( $token, AUTH_KEY );
     }
