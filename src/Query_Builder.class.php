@@ -67,14 +67,17 @@ class Query_Builder {
 
 	}
 
-	public function read_items_query( $table = false, $params = array() ){
+	public function read_items_query( $table = false, $model_name = '', $request = array() ){
 		if( !$table ) throw new \Exception( 'Missing Table' );
 		$q = 'SELECT * FROM ' . esc_sql( $table );
 
-		$search = new Query_Search( $params );
+		$search = new Query_Search( $request->params );
 		$query_search = $search->get_query_search();
 
 		if( isset( $query_search->filters ) ) $q .= ' WHERE ' . implode( ' AND ', $query_search->filters );
+
+		$q = apply_filters( 'war_read_query', $model_name, $request, $q );
+
 		if( isset( $query_search->order ) )   $q .= ' ORDER BY ' . implode( ', ', $query_search->order );
 		if( isset( $query_search->limit ) )   $q .= ' LIMIT ' . $query_search->limit;
 		if( isset( $query_search->offset ) )  $q .= ' OFFSET ' . $query_search->offset;

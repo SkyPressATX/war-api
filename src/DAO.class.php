@@ -14,8 +14,9 @@ class DAO {
 	private $params;
 	private $qb;
 	private $war_config;
+	private $request;
 
-	public function __construct( $wpdb = array(), $model = array(), $params = array(), $war_config = array() ){
+	public function __construct( $wpdb = array(), $model = array(), $params = array(), $war_config = array(), $request = array() ){
 		if( empty( $wpdb ) ) global $wpdb;
 
 		$this->db = $wpdb;
@@ -23,6 +24,7 @@ class DAO {
 		$this->params = $params;
 		$this->war_config = $war_config;
 		$this->qb = new Query;
+		$this->request = $request;
 	}
 
 	public function read_items(){
@@ -32,7 +34,7 @@ class DAO {
 		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $table );
 
 		$help = new Global_Helpers;
-		$read_query = $this->qb->read_items_query( $table, $this->params );
+		$read_query = $this->qb->read_items_query( $table, $this->model->name, $this->request );
 		$call = $this->db->get_results( $read_query );
 		if( is_wp_error( $call ) ) throw new \Exception( $call->get_error_message() );
 		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || isset( $this->params->sideSearch ) ) ){

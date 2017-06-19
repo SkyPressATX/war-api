@@ -91,7 +91,7 @@ class War_Model {
 		$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
 		if( ! isset( $request->db_info ) ) $request->db_info = array();
 		$db = $this->db_connection( $request->db_info );
-		$dao = new DAO( $db, $this->model, $request->params, $this->war_config );
+		$dao = new DAO( $db, $this->model, $request->params, $this->war_config, $request );
 		$items = $dao->read_items();
 
 		if( sizeof( $items ) <= 0 || empty( $items ) ) return apply_filters( 'war_pre_return_' . $this->model->name, $items );
