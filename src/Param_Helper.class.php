@@ -24,7 +24,10 @@ class Param_Helper {
 				'default' => 1
 			],
 			'sideLoad' => 'bool',
-			'sideSearch' => 'array'
+			'sideSearch' => [
+				'type' => 'array',
+				// 'sanitize_callback' => [ $this, 'sanitize_side_search' ]
+			]
 		];
 	}
 
@@ -34,7 +37,10 @@ class Param_Helper {
 				'type' => 'bool',
 				'default' => true
 			],
-			'sideSearch' => 'array'
+			'sideSearch' => [
+				'type' => 'array',
+				// 'sanitize_callback' => [ $this, 'sanitize_side_search' ]
+			]
 		];
 	}
 
@@ -153,4 +159,16 @@ class Param_Helper {
             return $a;
         };
     }
+
+	public function sanitize_side_search(){
+		return function( $a ){
+			if( is_string( $a ) ) $a = explode( ',', $a );
+			array_walk( $a, function( &$v ){
+				$v  = trim( $v );
+				$v = explode( ':', $v );
+				array_walk( $v, function( &$x ){ $x = ( is_numeric( $x ) ) ? floatval( $x ) : $x; } );
+			} );
+			return $v;
+		};
+	}
 }

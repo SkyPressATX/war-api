@@ -35,7 +35,7 @@ class DAO {
 		$read_query = $this->qb->read_items_query( $table, $this->params );
 		$call = $this->db->get_results( $read_query );
 		if( is_wp_error( $call ) ) throw new \Exception( $call->get_error_message() );
-		if( $this->params->sideLoad || isset( $this->params->sideSearch ) ){
+		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || isset( $this->params->sideSearch ) ) ){
 			array_walk( $call, function( &$item ){
 				$params = (object)[];
 				$params->filter = ( $this->params->sideSearch ) ? $this->params->sideSearch : [];
@@ -60,7 +60,7 @@ class DAO {
 		if( ! $find ) $find = $this->params->id;
 		$query = $this->qb->read_item_query( $table, $find, $search );
 		$item = $this->db->get_row( $query );
-		if( $this->params->sideLoad || $this->params->sideSearch ){
+		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || isset( $this->params->sideSearch ) ) ){
 			$params = (object)[];
 			$params->filter = ( $this->params->sideSearch ) ? $this->params->sideSearch : [];
 			$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );

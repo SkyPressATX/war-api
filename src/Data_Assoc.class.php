@@ -40,7 +40,30 @@ class Data_Assoc {
 
 	private function get_many_items( $assoc = array(), $bind = 'id', $model = false ){
 		if( ! $model ) return;
+
+		//Check if sideSearch has been turned into a filter
+		if( ! empty( $this->params && isset( $this->params->filter ) ) ){
+			$this->params->filter = (array)$this->params->filter;
+			array_walk( $this->params->filter, function( &$f ) use( $model ){
+				$f_array = explode( ':', $f );
+				if( sizeof( $f_array ) === 3 ){
+					$f = implode( ':', $f_array );
+					return;
+				}
+				if( sizeof( $f_array ) === 4 && $f_array[0] === $model ){
+					unset( $f_array[0] );
+					$f = implode( ':', $f_array );
+					return;
+				}
+				if( sizeof( $f_array ) !== 3 || sizeof( $f_array ) !== 4 || $f_array[0] !== $model ) $f = false;
+			});
+
+			$this->params->filter = array_filter( $this->params->filter, function( $v ){ return ( $v ); } );
+
+		}
+
 		if( empty( $this->params ) || sizeof( $this->params ) <= 0 ) $this->params = (object)[ 'filter' => [] ];
+
 		$this->params->filter[] = $this->model->name . ':eq:' . $this->item->$bind;
 		$this->item->$model = $this->local_call( $model, $this->params );
 	}

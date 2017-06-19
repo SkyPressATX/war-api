@@ -123,7 +123,7 @@ class War_Init {
 	 * @return Array If Error is a 404 return empty array, else return original $request.
 	 **/
 	public function handle_missing_requests( $status_header ){
-		if( preg_match( '/.+\s404\s.+/', $status_header ) ) return 'HTTP/1.1 200 ' . $ok;
+		if( preg_match( '/.+\s404\s.+/', $status_header ) ) return 'HTTP/1.1 200 ' . get_status_header_desc( 200 );
 		return $status_header;
 	}
 
