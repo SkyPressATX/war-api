@@ -44,11 +44,10 @@ class User_Auth {
 
 	private function nonce_check( $nonce ){
 		if( empty( $nonce ) ) return false;
-        if( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) return false;
-        if( wp_verify_nonce( $nonce, 'wp_rest' ) ){
-			$this->auth_type = 'NONCE';
-			return get_current_user_id();
-		}
+		$verify = wp_verify_nonce( $nonce, 'wp_rest' );
+		if( ! $verify ) return false;
+		$this->auth_type = 'NONCE';
+		return get_current_user_id();
 	}
 
 

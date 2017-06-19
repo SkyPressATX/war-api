@@ -24,7 +24,9 @@ class War_Defaults {
             'user_roles' => [],
             'version' => 1,
             'permalink' => '/posts/%postname%/',
-			'default_access' => false
+			'default_access' => false,
+			'war_jwt_expire' => ( time() + ( DAY_IN_SECONDS * 30 ) ),
+			'isolate_user_data' => true
         ];
 	}
 

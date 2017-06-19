@@ -11,24 +11,20 @@ class War_User {
 	private $auth_by;
 
 	public function get_user(){
-		$this->get_wp_user();
+		$this->get_authed_user();
 		$this->set_war_user();
 		return $this->war_user;
 	}
 
-	private function get_wp_user(){
-		$this->current_user = wp_get_current_user();
-
-		if( ! $this->current_user || $this->current_user->ID === 0 ){
-			$user_auth = new User_Auth;
-			$id = $user_auth->get_user_id();
-			$this->set_wp_user( $id );
-			$this->auth_by = $user_auth->get_auth_type();
-		}
+	private function get_authed_user(){
+		$user_auth = new User_Auth;
+		$id = $user_auth->get_user_id();
+		$this->set_wp_user( $id );
+		$this->auth_by = $user_auth->get_auth_type();
 	}
 
 	private function set_wp_user( $user_id = 0 ){
-		set_current_user( $user_id );
+		wp_set_current_user( $user_id );
 		$this->current_user = wp_get_current_user();
 	}
 

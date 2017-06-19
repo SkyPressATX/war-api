@@ -36,7 +36,7 @@ class Default_Endpoints {
         // wp_set_current_user( $auth->ID );
 
         // return $auth;
-        $war_jwt = new War_JWT( $data->war_config->jwt_expire, $auth->ID );
+        $war_jwt = new War_JWT( $data->war_config->war_jwt_expire, $auth->ID );
         $jwt = $war_jwt->jwt_key_create();
         return ['jwt' => $jwt ];
 	}
