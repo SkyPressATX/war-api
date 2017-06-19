@@ -43,17 +43,11 @@ class War_Init {
 		try {
 			$this->help = new Global_Helpers;
 			$this->auto_config = new War_Auto_Config( $this->war_config );
-			$this->get_current_user();
 			$this->add_filters();
 			$this->add_actions();
 		} catch( \Exception $e ){
 			wp_die( $e->getMessage() );
 		}
-	}
-
-	private function get_current_user(){
-		$war_user = new War_User;
-		$this->current_user = $war_user->get_user();
 	}
 
 	private function add_filters(){
@@ -67,10 +61,16 @@ class War_Init {
 	private function add_actions(){
 		add_action( 'init', [ $this->auto_config, 'manage_admin_toolbar' ] ); // Run config_admin_toolbar
 		add_action( 'init', [ $this->auto_config, 'set_user_roles' ] ); // Run config_set_user_roles
+		add_action( 'rest_api_init', [ $this, 'get_current_user' ] ); // Get an authenticated User
 		add_action( 'rest_api_init', [ $this, 'register_endpoints' ] );
 		add_action( 'rest_api_init', [ $this, 'register_models' ] );
 		add_action( 'wp_enqueue_scripts', [ $this->auto_config, 'war_localize' ] ); // Localize the warObject
 		add_action( 'wp', [ $this->auto_config, 'manage_admin_toolbar' ] ); //Show or Hide the Admin Toolbar
+	}
+
+	public function get_current_user(){
+		$war_user = new War_User;
+		$this->current_user = $war_user->get_user();
 	}
 
 	public function register_endpoints(){
