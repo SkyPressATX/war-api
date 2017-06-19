@@ -10,19 +10,22 @@ use War_Api\Data\Data_Assoc as Data_Assoc;
 class DAO {
 
 	private $db;
+	private $request;
 	private $model;
 	private $params;
 	private $qb;
 	private $war_config;
 
-	public function __construct( $wpdb = array(), $model = array(), $params = array(), $war_config = array() ){
+	public function __construct( $wpdb = array(), $model = array(), $request = array(), $war_config = array() ){
 		if( empty( $wpdb ) ) global $wpdb;
 
 		$this->db = $wpdb;
+		$this->request = $request;
 		$this->model = $model;
-		$this->params = $params;
+		$this->params = $this->request->params;
 		$this->war_config = $war_config;
-		$this->qb = new Query;
+		$this->isolate = $this->determine_isolation();
+		$this->qb = new Query( $this->isolate );
 	}
 
 	public function read_items(){
@@ -30,6 +33,8 @@ class DAO {
 		$table = $this->db->prefix . $this->model->name;
 		$table_check = $this->create_table();
 		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $table );
+
+		$this->add_current_user_to_filter();
 
 		$help = new Global_Helpers;
 		$read_query = $this->qb->read_items_query( $table, $this->params );
@@ -126,4 +131,17 @@ class DAO {
 		$this->params = $params;
 	}
 
+	private function determine_isolation(){
+		$isolate = $this->war_config->isolate_user_data;
+		if( isset( $this->model->isolate_user_data ) ) $isolate = $this->model->isolate_user_data;
+		return $isolate;
+	}
+
+	private function add_current_user_to_filter(){
+		if( ! $this->isolate ) return;
+		if( ! isset( $this->request->current_user ) ) return;
+
+		if( empty( $this->params ) ) $this->params = (object)[ 'filter' => [] ];
+		$this->params->filter[] =  'user:eq:' . $this->request->current_user->id;
+	}
 }
