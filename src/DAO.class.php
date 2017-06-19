@@ -60,33 +60,35 @@ class DAO {
 		return $this->insert_item();
 	}
 
-	// public function read_item( $table = false, $find = false, $search = 'id' ){
 	public function read_item(){
-		$help = new Global_Helpers;
-		// if(! $table ) $table = $this->db->prefix . $this->model->name;
-		// if( ! $find ) $find = $this->params->id;
-		$query = $this->qb->read_item_query( $this->table, $this->params->id, 'id' );
-		$item = $this->db->get_row( $query );
-		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || isset( $this->params->sideSearch ) ) ){
-			$params = (object)[];
-			$params->filter = ( $this->params->sideSearch ) ? $this->params->sideSearch : [];
-			$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );
-			$item = $da->get_assoc_data( $item );
-		}
-		return (object)$help->numberfy( $item );
+
+		$this->params->filter = [ 'id:eq:' . $this->params->id ];
+		unset( $this->params->id );
+
+		$item = $this->read_items();
+		return $item[0]; //Should only ever be one
 	}
 
 	public function update_item(){
 		$id = absint( trim( $this->params->id ) );
 		unset( $this->params->id );
+
 		$this->check_table_columns();
 		$this->unset_empty_values();
-		return $this->db->update( $this->table, $this->params, [ 'id' => $id ] );
+
+		$update_on_array = [ 'id' => $id ];
+		if( $this->isolate ) $update_on_array[ 'user' ] = $this->request->current_user->id;
+
+		return $this->db->update( $this->table, $this->params, $update_on_array );
 	}
 
 	public function delete_item(){
 		if( ! isset( $this->params->id ) ) throw new \Exceptions( 'No ID Provided' );
-		return $this->db->delete( $this->table, [ 'id' => absint( trim( $this->params->id ) ) ] );
+
+		$delete_on_array = [ 'id' => absint( trim( $this->params->id ) ) ];
+		if( $this->isolate ) $delete_on_array[ 'user' ] = $this->request->current_user->id;
+		
+		return $this->db->delete( $this->table, $delete_on_array );
 	}
 
 	private function create_table(){
@@ -140,9 +142,9 @@ class DAO {
 
 	private function add_current_user_to_filter(){
 		if( ! $this->isolate ) return;
-		if( ! isset( $this->request->current_user ) ) return;
+		// if( ! isset( $this->request->current_user ) ) return;
 
-		if( empty( $this->params ) ) $this->params = (object)[ 'filter' => [] ];
+		if( empty( $this->params ) ) $this->params = [ 'filter' => [] ];
 		$this->params->filter[] =  'user:eq:' . $this->request->current_user->id;
 	}
 
