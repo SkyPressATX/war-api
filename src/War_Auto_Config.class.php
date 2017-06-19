@@ -30,7 +30,6 @@ class War_Auto_Config {
             'nonce' => wp_create_nonce('wp_rest'),
             'permalink' => preg_replace('/\%.+\%/',':slug', get_option( 'permalink_structure' ) ),
             'category_base' => preg_replace('/\%.+\%/',':slug', get_option( 'category_base' ) ),
-            // 'api_prefix' => $this->war_config->api_prefix,
 			'api_prefix' => rest_get_url_prefix(),
             'api_namespace' => $this->war_config->namespace
         );

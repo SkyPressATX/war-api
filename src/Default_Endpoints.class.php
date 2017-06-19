@@ -73,6 +73,14 @@ class Default_Endpoints {
 	// 	return $class->war_jwt_create( $data );
 	// }
 
+	public function war_get_site_options( $data ){
+
+	}
+
+	public function war_save_site_options( $data ){
+		
+	}
+
 	public function war_site_options( $data ) {
 		$result = [
             'siteOptions' => [
