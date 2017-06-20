@@ -48,14 +48,14 @@ class War_Defaults {
 				'callback' => [ $de, 'war_get_menu' ]
 			],
 			'get_site_options' => [
-				'uri' => '/site-options',
+				'uri' => '/options/(?P<option>[a-z_\-]+)',
 				'method' => 'GET',
 				'callback' => [ $de, 'war_get_site_options' ]
 			],
 			'save_site_options' => [
-				'uri' => '/site-options',
+				'uri' => '/options/(?P<option>[a-z_\-]+)',
 				'method' => 'POST',
-				'access' => true,
+				'access' => 'manage_options',
 				'callback' => [ $de, 'war_save_site_options' ]
 			],
 			// 'theme_options' => [
