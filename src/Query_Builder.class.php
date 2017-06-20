@@ -4,12 +4,16 @@ namespace War_Api\Data;
 
 use War_Api\Data\Query_Search as Query_Search;
 use War_Api\Helpers\Global_Helpers as Global_Helpers;
+use War_Api\Security\War_User as War_User;
 
 class Query_Builder {
 
 	private $help;
+	private $current_user;
 
-	public function __construct(){
+	public function __construct( $current_user = [] ){
+		$this->current_user = $current_user;
+		if( empty( $this->current_user ) ) $this->get_current_user();
 		$this->help = new Global_Helpers;
 	}
 
@@ -60,11 +64,9 @@ class Query_Builder {
 			if( ! isset( $model_params[ $key ] ) ) unset( $requested_params[ $key ] );
 		}
 
-		$new_params = $this->set_default_params();
-		$new_params = array_merge( $requested_params, $new_params );
-		// $new_params = $this->help->numberfy( $new_params );
-		return $new_params;
+		$requested_params[ 'user' ] = $this->current_user->id;
 
+		return $requested_params;
 	}
 
 	public function read_items_query( $table = false, $params = array() ){
@@ -82,13 +84,6 @@ class Query_Builder {
 		return $q;
 	}
 
-	public function read_item_query( $table = false, $find = false, $search = 'id' ){
-		if( !$table ) throw new \Exception( 'Missing Table' );
-		if( !$find ) throw new \Exception( 'Missing Item ID' );
-		$q = 'SELECT * FROM ' . esc_sql( $table ) . ' WHERE `' . esc_sql( $search ) . '` = "' . esc_sql( $find ) . '"';
-		return $q;
-	}
-
 	/**
 	 * dao_default_create_values
 	 *
@@ -103,16 +98,20 @@ class Query_Builder {
 		);
 	}
 
-	/**
-     * dao_default_add_values
-     *
-     * @return Array
-     */
-    private function set_default_params(){
-        return array(
-            'user' => (int)get_current_user_id()
-        );
-    }
+	// /**
+    //  * dao_default_add_values
+    //  *
+    //  * @return Array
+    //  */
+    // private function set_default_params(){
+    //     return array(
+    //         'user' => (int)get_current_user_id()
+    //     );
+    // }
 
+	private function get_current_user(){
+		$wu = new War_User;
+		$this->current_user = $wu->get_user();
+	}
 
 }

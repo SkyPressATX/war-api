@@ -2,6 +2,8 @@
 
 namespace War_Api;
 
+use \War_Api\Security\War_User as War_User;
+
 /**
  * These methods should run, well, automatically; at the right time
  **/
@@ -23,6 +25,9 @@ class War_Auto_Config {
 	}
 
 	public function war_localize(){
+
+		$wu = new War_User;
+
 		wp_register_script('war_site_details', null);
         $war_object = array(
             'warPath' => get_template_directory_uri(),
@@ -30,10 +35,13 @@ class War_Auto_Config {
             'nonce' => wp_create_nonce('wp_rest'),
             'permalink' => preg_replace('/\%.+\%/',':slug', get_option( 'permalink_structure' ) ),
             'category_base' => preg_replace('/\%.+\%/',':slug', get_option( 'category_base' ) ),
-            // 'api_prefix' => $this->war_config->api_prefix,
 			'api_prefix' => rest_get_url_prefix(),
-            'api_namespace' => $this->war_config->namespace
+            'api_namespace' => $this->war_config->namespace,
+			'user' => $wu->get_wp_user()
         );
+
+
+
         $war_object = apply_filters( 'war_object', $war_object );
         wp_localize_script('war_site_details','warObject',$war_object);
         wp_enqueue_script('war_site_details');

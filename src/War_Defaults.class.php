@@ -47,17 +47,28 @@ class War_Defaults {
 				'access' => false,
 				'callback' => [ $de, 'war_get_menu' ]
 			],
-			'theme_options' => [
-				'uri' => '/theme-options',
-				'access' => false,
+			'get_site_options' => [
+				'uri' => '/options/(?P<option>[a-z_\-]+)',
+				'method' => 'GET',
+				'callback' => [ $de, 'war_get_site_options' ]
+			],
+			'save_site_options' => [
+				'uri' => '/options/(?P<option>[a-z_\-]+)',
 				'method' => 'POST',
-				'callback' => [ $de, 'war_theme_options' ]
+				'access' => 'manage_options',
+				'callback' => [ $de, 'war_save_site_options' ]
 			],
-			'site_options' => [
-				'uri' => '/site-options',
-				'access' => false,
-				'callback' => [ $de, 'war_site_options' ]
-			],
+			// 'theme_options' => [
+			// 	'uri' => '/theme-options',
+			// 	'access' => false,
+			// 	'method' => 'POST',
+			// 	'callback' => [ $de, 'war_theme_options' ]
+			// ],
+			// 'site_options' => [
+			// 	'uri' => '/site-options',
+			// 	'access' => false,
+			// 	'callback' => [ $de, 'war_site_options' ]
+			// ],
 			'login' => [
 				'uri' => '/login',
 				'access' => null,

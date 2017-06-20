@@ -2,7 +2,7 @@
 /*
 Plugin Name: WAR API
 Description:  WAR API
-Version: 0.1.9.1
+Version: 0.1.9.2
 Author: BMO
 License: MIT
 */
@@ -59,9 +59,9 @@ class War_Api {
     }
 
     public function init(){
+        define( 'WAR_API_INIT', true );
         $war_init = new War_Init( $this->config, $this->endpoints, $this->models );
         $war_init->init();
-        // add_action( 'init', [ $war_init, 'init' ] );
     }
 
 } // END War_Api class
@@ -70,3 +70,11 @@ class War_Api {
 //
 // /** Updater Class only needs to be available in wp-admin **/
 // if( is_admin() ) new war_api_updater( __FILE__, 'SkyPressATX', 'war-api' );
+
+
+add_action( 'plugins_loaded', function(){
+    if( defined( 'WAR_API_INIT' ) ) return;
+    /** Initialize the WAR API if no custom plugin has done so already **/
+    $war_api = new War_Api;
+    $war_api->init();
+}, 99 );

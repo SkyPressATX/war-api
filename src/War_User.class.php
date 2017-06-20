@@ -16,6 +16,13 @@ class War_User {
 		return $this->war_user;
 	}
 
+	public function get_wp_user(){
+		$this->auth_by = 'COOKIE';
+		$this->current_user = wp_get_current_user();
+		$this->set_war_user();
+		return $this->war_user;
+	}
+
 	private function get_authed_user(){
 		$user_auth = new User_Auth;
 		$id = $user_auth->get_user_id();
