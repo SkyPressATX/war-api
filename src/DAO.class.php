@@ -26,7 +26,7 @@ class DAO {
 		$this->params = $this->request->params;
 		$this->war_config = $war_config;
 		$this->isolate = $this->determine_isolation();
-		$this->qb = new Query( $this->isolate );
+		$this->qb = new Query( $this->request->current_user );
 		$this->table = $this->get_table_name();
 	}
 
@@ -87,7 +87,7 @@ class DAO {
 
 		$delete_on_array = [ 'id' => absint( trim( $this->params->id ) ) ];
 		if( $this->isolate ) $delete_on_array[ 'user' ] = $this->request->current_user->id;
-		
+
 		return $this->db->delete( $this->table, $delete_on_array );
 	}
 
@@ -142,7 +142,6 @@ class DAO {
 
 	private function add_current_user_to_filter(){
 		if( ! $this->isolate ) return;
-		// if( ! isset( $this->request->current_user ) ) return;
 
 		if( empty( $this->params ) ) $this->params = [ 'filter' => [] ];
 		$this->params->filter[] =  'user:eq:' . $this->request->current_user->id;
