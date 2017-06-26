@@ -24,25 +24,28 @@ class War_Auto_Config {
 		return true;
 	}
 
-	public function war_localize(){
+	public function add_war_object( $war_object ){
 
 		$wu = new War_User;
 
-		wp_register_script('war_site_details', null);
-        $war_object = array(
-            'warPath' => get_template_directory_uri(),
-            'childPath' => get_stylesheet_directory_uri(),
-            'nonce' => wp_create_nonce('wp_rest'),
-            'permalink' => preg_replace('/\%.+\%/',':slug', get_option( 'permalink_structure' ) ),
-            'category_base' => preg_replace('/\%.+\%/',':slug', get_option( 'category_base' ) ),
+		$war_object = array(
+			'warPath' => get_template_directory_uri(),
+			'childPath' => get_stylesheet_directory_uri(),
+			'nonce' => wp_create_nonce('wp_rest'),
+			'permalink' => preg_replace('/\%.+\%/',':slug', get_option( 'permalink_structure' ) ),
+			'category_base' => preg_replace('/\%.+\%/',':slug', get_option( 'category_base' ) ),
 			'api_prefix' => rest_get_url_prefix(),
-            'api_namespace' => $this->war_config->namespace,
+			'api_namespace' => $this->war_config->namespace,
 			'user' => $wu->get_wp_user()
-        );
+		);
 
+		return $war_object;
+	}
 
+	public function war_localize(){
+		wp_register_script('war_site_details', null);
 
-        $war_object = apply_filters( 'war_object', $war_object );
+        $war_object = apply_filters( 'war_object', [] );
         wp_localize_script('war_site_details','warObject',$war_object);
         wp_enqueue_script('war_site_details');
 	}
