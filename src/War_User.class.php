@@ -17,8 +17,13 @@ class War_User {
 	}
 
 	public function get_wp_user(){
-		$this->auth_by = 'COOKIE';
-		$this->current_user = wp_get_current_user();
+		$this->get_authed_user(); //First try to auth the Rest API way
+
+		// If no Rest API auth returns a user, try the cookie
+		if( ! method_exists( $this->current_user, 'get') || $this->current_user->get( 'ID' ) == 0 ) $this->current_user = wp_get_current_user();
+		// If we had to use the cookie, set the proper auth_by value
+		if( ! isset( $this->auth_by ) && $this->current_user->get( 'ID' ) != 0 ) $this->auth_by = 'COOKIE';
+
 		$this->set_war_user();
 		return $this->war_user;
 	}
@@ -31,6 +36,10 @@ class War_User {
 	}
 
 	private function set_wp_user( $user_id = 0 ){
+		if( $user_id == 0 ){
+			$this->current_user = (object)[];
+			return;
+		}
 		wp_set_current_user( $user_id );
 		$this->current_user = wp_get_current_user();
 	}
