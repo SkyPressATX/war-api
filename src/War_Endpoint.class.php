@@ -71,9 +71,9 @@ class War_Endpoint {
 		if( isset( $this->endpoint->params ) )
 			$this->endpoint->params = $this->param_helper->process_args( $this->endpoint->params );
 
-		if( property_exists( $this->endpoint->access ) && $this->endpoint->access === null ) $this->endpoint->access = 'null';
+		if( property_exists( $this->endpoint, 'access' ) && $this->endpoint->access === null ) $this->endpoint->access = 'null';
 
-		if( ! property_exists( $this->endpoint->access ) )
+		if( ! property_exists( $this->endpoint, 'access' ) )
 			$this->endpoint->access = $this->war_config->default_access;
 	}
 }
