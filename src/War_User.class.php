@@ -43,9 +43,9 @@ class War_User {
 	 **/
 	private function set_war_user(){
 		$this->war_user = (object)[
-			'id' => $this->current_user->ID,
-			'email' => $this->current_user->data->user_email,
-			'roles' => $this->current_user->roles,
+			'id' => $this->current_user->get( 'ID' ),
+			'email' => $this->current_user->get( 'user_email' ),
+			'roles' => $this->current_user->get( 'roles' ),
 			'auth' => $this->auth_by
 		];
 		$this->war_user->caps = array_keys( array_filter( $this->current_user->allcaps ) );
