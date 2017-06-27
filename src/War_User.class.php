@@ -51,6 +51,9 @@ class War_User {
 	 * We Don't need everyting, just specific items from the WP_User Object.
 	 **/
 	private function set_war_user(){
+		if( ! method_exists( $this->current_user, 'get' ) || empty( $this->current_user ) ) $this->current_user = wp_get_current_user();
+		if( ! $this->current_user->exists() ) $this->war_user = [];
+
 		$this->war_user = (object)[
 			'id' => $this->current_user->get( 'ID' ),
 			'email' => $this->current_user->get( 'user_email' ),
