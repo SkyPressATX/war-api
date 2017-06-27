@@ -8,10 +8,12 @@ class User_Auth {
 
 	private $user_id;
 	private $auth_type;
+	private $authed = null;
 
 	public function __construct(){
 		$this->get_user_id_by_jwt();
-		$this->get_user_id_by_nonce();
+		if( empty( $this->user_id ) ) $this->get_user_id_by_nonce(); //Try the nonce then
+		$this->auth_used( $this->authed );
 	}
 
 
@@ -24,12 +26,14 @@ class User_Auth {
 	}
 
 	private function get_user_id_by_jwt(){
-		if( ! isset( $this->user_id ) && isset( $_SERVER[ 'HTTP_AUTHORIZATION' ] ) )
+		if( isset( $this->user_id ) ) return;
+		if( isset( $_SERVER[ 'HTTP_AUTHORIZATION' ] ) )
 			$this->user_id = $this->key_check( $_SERVER[ 'HTTP_AUTHORIZATION' ] );
 	}
 
 	private function get_user_id_by_nonce(){
-		if( ! isset( $this->user_id ) && isset( $_SERVER[ 'HTTP_X_WP_NONCE' ] ) )
+		if( isset( $this->user_id ) ) return;
+		if( isset( $_SERVER[ 'HTTP_X_WP_NONCE' ] ) )
 			$this->user_id = $this->nonce_check( $_SERVER[ 'HTTP_X_WP_NONCE' ] );
 	}
 
@@ -37,19 +41,35 @@ class User_Auth {
 		if(empty($key)) return false;
 		$jwt = new War_JWT;
 		$res = $jwt->jwt_key_decode( $key );
-		if( is_wp_error( $res ) ) return $res;
+		if( is_wp_error( $res ) ){
+			$this->authed = $res;
+			return;
+		}
 		$this->auth_type = 'JWT';
+		$this->authed = true;
 		return $res;
 	}
 
 	private function nonce_check( $nonce ){
 		if( empty( $nonce ) ) return false;
+
 		$verify = wp_verify_nonce( $nonce, 'wp_rest' );
-		if( ! $verify ) return false;
-		$this->auth_type = 'NONCE';
+
+		if( ! $verify || ! is_user_logged_in() ){
+			$this->authed = false;
+			return;
+		}
+
+		$this->auth_type = 'COOKIE';
+		$this->authed = true;
 		return get_current_user_id();
 	}
 
+	private function auth_used(){
+		add_filter( 'rest_authentication_errors', function( $authed ){
+			return $this->authed;
+		});
+	}
 
 
 }

@@ -62,7 +62,7 @@ class War_Init {
 	private function add_actions(){
 		add_action( 'init', [ $this->auto_config, 'manage_admin_toolbar' ] ); // Run config_admin_toolbar
 		add_action( 'init', [ $this->auto_config, 'set_user_roles' ] ); // Run config_set_user_roles
-		add_action( 'rest_api_init', [ $this, 'get_current_user' ] ); // Get an authenticated User
+		add_action( 'init', [ $this, 'get_current_user' ] ); // Get an authenticated User
 		add_action( 'rest_api_init', [ $this, 'register_endpoints' ] );
 		add_action( 'rest_api_init', [ $this, 'register_models' ] );
 		add_action( 'wp_enqueue_scripts', [ $this->auto_config, 'war_localize' ] ); // Localize the warObject

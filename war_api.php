@@ -60,6 +60,7 @@ class War_Api {
 
     public function init(){
         define( 'WAR_API_INIT', true );
+        $this->config[ 'nonce' ] = wp_create_nonce('wp_rest'); //Add this here so that it can't be edited
         $war_init = new War_Init( $this->config, $this->endpoints, $this->models );
         $war_init->init();
     }

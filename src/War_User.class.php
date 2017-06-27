@@ -9,38 +9,33 @@ class War_User {
 	private $current_user;
 	private $war_user;
 	private $auth_by;
+	private $user_id;
 
-	public function get_user(){
-		$this->get_authed_user();
+	public function get_war_user(){
+		if( ! is_user_logged_in() ) return [];
+		$this->current_user = wp_get_current_user();
 		$this->set_war_user();
 		return $this->war_user;
 	}
 
-	public function get_wp_user(){
-		$this->get_authed_user(); //First try to auth the Rest API way
-
-		// If no Rest API auth returns a user, try the cookie
-		if( ! method_exists( $this->current_user, 'get') || $this->current_user->get( 'ID' ) == 0 ) $this->current_user = wp_get_current_user();
-		// If we had to use the cookie, set the proper auth_by value
-		if( ! isset( $this->auth_by ) && $this->current_user->get( 'ID' ) != 0 ) $this->auth_by = 'COOKIE';
-
-		$this->set_war_user();
+	public function get_user(){
+		$this->get_authed_user(); //Get an authorized user either through JWT or Cookie
+		$this->set_authed_user(); //Set current user for the rest of WordPress
+		$this->set_war_user(); //Build a WAR User object (strip out private data)
 		return $this->war_user;
 	}
 
 	private function get_authed_user(){
 		$user_auth = new User_Auth;
-		$id = $user_auth->get_user_id();
-		$this->set_wp_user( $id );
+		$this->user_id = $user_auth->get_user_id();
 		$this->auth_by = $user_auth->get_auth_type();
 	}
 
-	private function set_wp_user( $user_id = 0 ){
-		if( $user_id == 0 ){
-			$this->current_user = (object)[];
-			return;
-		}
-		wp_set_current_user( $user_id );
+
+	private function set_authed_user(){
+		if( ! isset( $this->user_id ) || $this->user_id == 0 ) return;
+
+		wp_set_current_user( $this->user_id );
 		$this->current_user = wp_get_current_user();
 	}
 
@@ -51,8 +46,9 @@ class War_User {
 	 * We Don't need everyting, just specific items from the WP_User Object.
 	 **/
 	private function set_war_user(){
-		if( ! method_exists( $this->current_user, 'get' ) || empty( $this->current_user ) ) $this->current_user = wp_get_current_user();
-		if( ! $this->current_user->exists() ) $this->war_user = [];
+		// print_r( $this->current_user );
+		// var_dump( is_user_logged_in() );
+		if( empty( $this->current_user ) || ! is_user_logged_in() ) return [];
 
 		$this->war_user = (object)[
 			'id' => $this->current_user->get( 'ID' ),

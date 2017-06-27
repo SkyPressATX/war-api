@@ -32,8 +32,9 @@ class Default_Endpoints {
 
         if( is_wp_error( $auth ) ) return $auth;
 
-        // wp_set_auth_cookie( $auth->ID );
-        // wp_set_current_user( $auth->ID );
+		wp_clear_auth_cookie();
+	    wp_set_current_user( $auth->ID );
+	    wp_set_auth_cookie( $auth->ID );
 
         // return $auth;
         $war_jwt = new War_JWT( $data->war_config->war_jwt_expire, $auth->ID );

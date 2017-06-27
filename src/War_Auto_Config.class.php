@@ -25,18 +25,17 @@ class War_Auto_Config {
 	}
 
 	public function add_war_object( $war_object ){
-
 		$wu = new War_User;
 
 		$war_object = array(
 			'warPath' => get_template_directory_uri(),
 			'childPath' => get_stylesheet_directory_uri(),
-			'nonce' => wp_create_nonce('wp_rest'),
+			'nonce' => $this->war_config->nonce,
 			'permalink' => preg_replace('/\%.+\%/',':slug', get_option( 'permalink_structure' ) ),
 			'category_base' => preg_replace('/\%.+\%/',':slug', get_option( 'category_base' ) ),
 			'api_prefix' => rest_get_url_prefix(),
 			'api_namespace' => $this->war_config->namespace,
-			'user' => $wu->get_wp_user()
+			'user' => $wu->get_war_user()
 		);
 
 		return $war_object;
