@@ -41,10 +41,10 @@ class DAO {
 		$read_query = $this->qb->read_items_query( $this->table, $this->params );
 		$call = $this->db->get_results( $read_query );
 		if( is_wp_error( $call ) ) throw new \Exception( $call->get_error_message() );
-		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || isset( $this->params->sideSearch ) ) ){
+		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || property_exists( $this->params, 'sideSearch' ) ) ){
 			array_walk( $call, function( &$item ){
 				$params = (object)[];
-				$params->filter = ( $this->params->sideSearch ) ? $this->params->sideSearch : [];
+				$params->filter = ( property_exists( $this->params, 'sideSearch' ) ) ? $this->params->sideSearch : [];
 				$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );
 				$item = $da->get_assoc_data( $item );
 			});
