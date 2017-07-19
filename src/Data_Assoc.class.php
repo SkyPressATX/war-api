@@ -71,8 +71,6 @@ class Data_Assoc {
 	private function get_one_item( $assoc = array(), $bind = 'id', $model = false ){
 		if( ! $model ) return;
 		if( ! isset( $this->item->$model ) || empty( $this->item->$model ) ) return;
-		// if( isset( $this->params->filter ) ) unset( $this->params->filter );
-		// if( empty( $this->params ) || sizeof( $this->params ) <= 0 )
 		$this->params = (object)[ 'filter' => [] ];
 
 		$this->params->filter[] = $bind . ':eq:' . $this->item->$model;
@@ -92,11 +90,4 @@ class Data_Assoc {
 		$result = rest_do_request( $req );
 		return $result->get_data();
 	}
-
-
-
-
-
-
-
-}
+} // END Class
