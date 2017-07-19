@@ -45,6 +45,7 @@ class DAO {
 			array_walk( $call, function( &$item ){
 				$params = (object)[];
 				$params->filter = ( property_exists( $this->params, 'sideSearch' ) ) ? $this->params->sideSearch : [];
+				if( property_exists( $this->params, 'sideLimit' ) ) $params->limit = $this->params->sideLimit;
 				$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );
 				$item = $da->get_assoc_data( $item );
 			});

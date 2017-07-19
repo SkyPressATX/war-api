@@ -27,6 +27,10 @@ class Param_Helper {
 			'sideSearch' => [
 				'type' => 'array',
 				// 'sanitize_callback' => [ $this, 'sanitize_side_search' ]
+			],
+			'sideLimit' => [
+				'type' => 'integer',
+				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10
 			]
 		];
 	}
@@ -40,6 +44,10 @@ class Param_Helper {
 			'sideSearch' => [
 				'type' => 'array',
 				// 'sanitize_callback' => [ $this, 'sanitize_side_search' ]
+			],
+			'sideLimit' => [
+				'type' => 'integer',
+				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10
 			]
 		];
 	}
