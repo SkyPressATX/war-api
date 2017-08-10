@@ -2,128 +2,169 @@
 
 namespace War_Api\Data;
 
-use War_Api\Data\Query_Builder as Query;
-use War_Api\Security\Role_Check as Role_Check;
+use War_Api\Data\Query_Search as Query_Search;
 use War_Api\Helpers\Global_Helpers as Global_Helpers;
-use War_Api\Data\Data_Assoc as Data_Assoc;
+use War_Api\Data\Query_Assoc as Query_Assoc;
+use War_Api\Data\Query_Builder as Query_Builder;
+use War_Api\Data\War_DB as War_DB;
 
 class DAO {
 
-	private $db;
+	/**
+	 * Start with Other Classes
+	 **/
+	private $query_search;
+	private $query_builder;
+	private $query_assoc;
+	private $help;
+	private $db = false;
+
 	private $request;
 	private $model;
 	private $params;
-	private $qb;
 	private $war_config;
-	private $table;
+	private $table_prefix;
+	private $query_map;
 
-	public function __construct( $wpdb = array(), $model = array(), $request = array(), $war_config = array() ){
-		if( empty( $wpdb ) ) global $wpdb;
+	public function __construct( $db_info = array(), $model = array(), $request = array(), $war_config = array() ){
+		try {
+			if( ! empty( $db_info ) ) $this->db = $this->mysqli_connection( $db_info );
+			$this->war_db = War_DB::init( $this->db );
+		}catch( \Exception $e ){
+			throw new \Exception( $e->getMessage() );
+		}
 
-		$this->db = $wpdb;
+		$this->model = (object)$model;
 		$this->request = $request;
-		$this->model = $model;
 		$this->params = $this->request->params;
 		$this->war_config = $war_config;
 		$this->isolate = $this->determine_isolation();
-		$this->qb = new Query( $this->request->current_user );
-		$this->table = $this->get_table_name();
+		$this->table_prefix = $this->get_table_prefix( $db_info );
+
+		$this->query_search = new Query_Search;
+		$this->help = new Global_Helpers;
+		$this->query_assoc = new Query_Assoc( $this->model->assoc, $this->params, $this->table_prefix );
+
 	}
 
-	public function read_items(){
-		/** First check if the table exists, create it if not **/
-		$table_check = $this->create_table();
-		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $this->table );
+	/**
+	 * Read All Items from DB
+	 *
+	 * Get Items, Associated Items, and Info Results
+	 **/
+	public function read_all(){
+		try {
+			$this->add_current_user_to_filter();
+			$table = $this->table_prefix . $this->model->name;
+			$this->query_map = [];
 
-		$this->add_current_user_to_filter();
+			if( property_exists( $this->model, 'assoc' ) && ! empty( $this->model->assoc ) )
+				$this->query_map[ 'assoc' ] = $this->query_assoc->get_query_maps();
 
-		$help = new Global_Helpers;
-		$read_query = $this->qb->read_items_query( $this->table, $this->params );
-		$call = $this->db->get_results( $read_query );
-		if( is_wp_error( $call ) ) throw new \Exception( $call->get_error_message() );
-		if( isset( $this->model->assoc ) && ( $this->params->sideLoad || property_exists( $this->params, 'sideSearch' ) ) ){
-			array_walk( $call, function( &$item ){
-				$params = (object)[];
-				$params->filter = ( property_exists( $this->params, 'sideSearch' ) ) ? $this->params->sideSearch : [];
-				if( property_exists( $this->params, 'sideLimit' ) ) $params->limit = $this->params->sideLimit;
-				$da = new Data_Assoc( $this->war_config, $this->model->assoc, $params, $this->model );
-				$item = $da->get_assoc_data( $item );
-			});
-		}
-		return $help->numberfy( $call );
-	}
+			//Build war_db select_all() params
+			$this->query_map[ 'query' ] = [
+				'select' => ( property_exists( $this->params, 'select' ) ) ? $this->params->select : [],
+				'table'   => $table,
+				'where'  => $this->query_search->parse_filters( $this->params->filter, $table ),
+				'limit'  => $this->query_search->parse_limit( $this->params->limit ),
+				'order'  => $this->query_search->parse_order( $this->params->order, $table ),
+				'offset' => $this->query_search->parse_page( $this->params->page, $this->params->limit )
+			];
 
-	public function create_item(){
-		/** First check if the table exists, create it if not **/
-		$table_check = $this->create_table();
-		if( is_wp_error( $table_check ) || ! $table_check ) throw new Exception( 'Error Creating Table: ' . $this->table );
+			// Lets look for any assoc queries that have a where statement. Pull that data first
+			foreach( $this->query_map[ 'assoc' ] as $model => &$assoc ){
+				if( ! empty( $assoc[ 'query' ][ 'where' ] ) ){
+					$assoc_where = $this->query_assoc->get_side_search_filter( $assoc, $model, $table );
+					if( $assoc_where ){
+						if( ! empty( $assoc_where[ 'data' ] ) ) $assoc[ 'data' ] = $assoc_where[ 'data' ];
+						$this->query_map[ 'query' ][ 'where' ][] = $assoc_where[ 'filter' ];
 
-		return $this->insert_item();
-	}
-
-	public function read_item(){
-
-		$this->params->filter = [ 'id:eq:' . $this->params->id ];
-		unset( $this->params->id );
-
-		$item = $this->read_items();
-		return $item[0]; //Should only ever be one
-	}
-
-	public function update_item(){
-		$id = absint( trim( $this->params->id ) );
-		unset( $this->params->id );
-
-		$this->check_table_columns();
-		$this->unset_empty_values();
-
-		$update_on_array = [ 'id' => $id ];
-		if( $this->isolate ) $update_on_array[ 'user' ] = $this->request->current_user->id;
-
-		return $this->db->update( $this->table, $this->params, $update_on_array );
-	}
-
-	public function delete_item(){
-		if( ! isset( $this->params->id ) ) throw new \Exceptions( 'No ID Provided' );
-
-		$delete_on_array = [ 'id' => absint( trim( $this->params->id ) ) ];
-		if( $this->isolate ) $delete_on_array[ 'user' ] = $this->request->current_user->id;
-
-		return $this->db->delete( $this->table, $delete_on_array );
-	}
-
-	private function create_table(){
-		$create_table_query = $this->qb->create_table_query( $this->table, $this->model->params );
-		return $this->db->query( $create_table_query );
-	}
-
-	private function insert_item(){
-		$this->unset_empty_values();
-		$insert_data = $this->qb->insert_data( $this->model->params, $this->params );
-		return $this->db->insert( $this->table, $insert_data );
-	}
-
-	private function check_table_columns(){
-		$default_col = [ 'id', 'created_on', 'updated_on', 'user' ];
-		$model_col = array_merge( $default_col, array_keys( (array)$this->model->params ) );
-		$t_q = 'SELECT `COLUMN_NAME` FROM INFORMATION_SCHEMA.COLUMNS WHERE `TABLE_NAME` = "' . esc_sql( $this->table ) . '"';
-		$table_col = $this->db->get_col( $t_q );
-		$remove = array_values( array_diff( $table_col, $model_col ) );
-		$add = array_values( array_diff( $model_col, $table_col ) );
-
-		if( ! empty( $remove ) ) $remove_query = $this->qb->drop_col_query( $this->table, $remove );
-		if( ! empty( $add ) ){
-			foreach( $add as $c ){
-				if( ! isset( $this->model->params[ $c ] ) ) continue;
-				if( ! is_array( $this->model->params[ $c ] ) ) $this->model->params[ $c ] = [ 'type' => $this->model->params[ $c ] ];
-				$add_col[ $c ] = $this->model->params[ $c ];
+					}
+				}
 			}
 
-			if( isset( $add_col ) ) $add_query = $this->qb->add_col_query( $this->table, $add_col );
+			$total = $this->query_map[ 'query' ];
+			$total[ 'select' ] = 'COUNT(' . $table . '.id)';
+			unset( $total[ 'limit' ] );
+			unset( $total[ 'offset' ] );
+
+			// print_r( $this->query_map );
+			$data = $this->war_db->select_all( $this->query_map[ 'query' ] );
+
+			//Append our Associated Data
+			if( property_exists( $this->params, 'sideSearch' ) || $this->params->sideLoad !== false && ! empty( $this->query_map[ 'assoc' ] ) )
+				$data = $this->query_assoc->append_assoc_data( $this->query_map[ 'assoc' ], $data );
+
+			if( ! $this->params->_info ) return $data;
+
+			$result = [
+				'data' => $data,
+				'_info' => [
+					'total' => $this->war_db->select_one( $total )
+				],
+				'_pages' => [
+					'current_page' => ( property_exists( $this->params, 'page' ) ) ? $this->params->page : NULL
+				]
+			];
+
+			if( $result[ '_info' ][ 'total' ] > 0 ){
+				$result[ '_info' ][ 'count' ]  = ( $result[ '_info' ][ 'total' ]  < $this->params->limit ) ? $result[ '_info' ][ 'total' ]  : $this->params->limit;
+				$result[ '_pages' ][ 'total_pages' ]  = ( (integer)ceil( $result[ '_info' ][ 'total' ] / $this->params->limit ) );
+				$result[ '_pages' ][ 'next_page' ] = ( ($this->params->page + 1) <= $result[ '_pages' ][ 'total_pages' ]  ) ? ($this->params->page + 1) : $result[ '_pages' ][ 'total_pages' ];
+			}
+
+			return $result;
+
+		} catch( \Exception $e ){
+			throw new \Exception( $e->getMessage() );
 		}
 
-		if( isset( $remove_query ) ) $r_call = $this->db->query( $remove_query );
-		if( isset( $add_query ) ) $a_call = $this->db->query( $add_query );
+	} // END Read Items Method
+
+	public function read_one(){
+		try {
+			$this->params->_info = false;
+			$this->params->filter = [ 'id:eq:' . $this->params->id ];
+			$this->params->limit = 1;
+			$this->params->page = 1;
+			unset( $this->params->id );
+
+			$item = $this->read_all();
+
+			return $item[0];
+		} catch( \Exception $e ){
+			throw new \Exception( $e->getMessage() );
+		}
+	}
+
+	public function insert_one(){
+		try {
+			$this->unset_empty_values();
+			$insert_map = [
+				'table' => $this->table_prefix . $this->model->name
+			];
+			return true;
+			// $insert_query = $this->qb->insert_data( $this->model->params, $this->params );
+			// return $this->db->insert( $this->table, $insert_data );
+		} catch( \Exception $e ){
+			throw new \Exception( $e->getMessage() );
+		}
+	}
+
+	public function update_one(){
+		try {
+			return true;
+		} catch( \Exception $e ){
+			throw new \Exception( $e->getMessage() );
+		}
+	}
+
+	public function delete_one(){
+		try {
+			return true;
+		} catch( \Exception $e ){
+			throw new \Exception( $e->getMessage() );
+		}
 	}
 
 	private function unset_empty_values(){
@@ -137,7 +178,7 @@ class DAO {
 
 	private function determine_isolation(){
 		$isolate = $this->war_config->isolate_user_data;
-		if( isset( $this->model->isolate_user_data ) ) $isolate = $this->model->isolate_user_data;
+		if( property_exists( $this->model, 'isolate_user_data' ) ) $isolate = $this->model->isolate_user_data;
 		return $isolate;
 	}
 
@@ -148,10 +189,35 @@ class DAO {
 		$this->params->filter[] =  'user:eq:' . $this->request->current_user->id;
 	}
 
-	private function get_table_name(){
-		$table = $this->db->prefix;
-		$table .= ( isset( $this->model->table_prefix ) ) ? $this->model->table_prefix : $this->war_config->api_name . '_';
-		$table .= $this->model->name;
-		return $table;
+	private function get_table_prefix( $db_info = array() ){
+		//Use $db_info[ 'table_prefix' ] if set
+		if( ! empty( $db_info ) && isset( $db_info[ 'table_prefix' ] ) ) return $db_info[ 'table_prefix' ];
+		//Use $this->war_config->table_prefix if set
+		if( property_exists( $this->war_config, 'table_prefix' ) ) return $this->war_config->table_prefix;
+		//Use WordPress $table_prefix as a last resort
+		global $table_prefix;
+		return $table_prefix;
+	}
+
+	// Connect to mysql using provided credentials
+	private function mysqli_connection( $db_info = array() ){
+		$db_info = (object)$db_info;
+		if( ! property_exists( $db_info, 'db_port' ) ) $db_info->db_port = 33306; //Default mysql port
+
+		$db = mysqli_init();
+		$db->options( MYSQLI_OPT_INT_AND_FLOAT_NATIVE, 1 );
+		if( property_exists( $db_info, 'ssl' ) && is_array( $db_info->ssl ) )
+			$db->ssl_set( $db_info->ssl[0], $db_info->ssl[1], $db_info->ssl[2], $db_info->ssl[3], $db_info->ssl[4] );
+
+		$db->real_connect(
+			$db_info->db_host,
+			$db_info->db_user,
+			$db_info->db_password,
+			$db_info->db_name,
+			$db_info->db_port
+		);
+
+		return $db;
+
 	}
 }

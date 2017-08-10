@@ -45,10 +45,17 @@ class War_Endpoint {
 	        $war_request->war_config = $this->war_config;
 			$war_request->current_user = $this->current_user;
 
-	        if( method_exists( $this->endpoint->callback[0], $this->endpoint->callback[1] ) )
-	            return call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $war_request );
-	        else
+			// $war_request->assoc = (object)[];
+			// if( $request->offsetExists( 'db_connection' ) ) $war_request->assoc->db_connection = $request->offsetGet( 'db_connection' );
+			// if( $request->offsetExists( 'assoc_limit' ) ) $war_request->assoc->limit = $request->offsetGet( 'assoc_limit' );
+			// if( $request->offsetExists( 'assoc_call ' ) ) $war_request->assoc->call = $request->offsetGet( 'assoc_call' );
+
+	        if( method_exists( $this->endpoint->callback[0], $this->endpoint->callback[1] ) ){
+	            $result = call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $war_request );
+				return $result;
+	        }else{
 	            throw new \Exception( 'Endpoint Method Not Found' );
+			}
 		} catch( \Exception $e ){
 			return new \WP_REST_Response( $e->getMessage() );
 		}

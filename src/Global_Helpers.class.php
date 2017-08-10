@@ -51,16 +51,31 @@ class Global_Helpers {
             if( is_array( $row ) || is_object( $row ) ){
                 $row = $this->numberfy( $row );
             }else{
-                if( is_numeric( $row ) ) $row = (int) $row;
-            }
+				if( is_numeric( $row ) ) $row = (float) $row;
+			}
         }
         return $array;
     }
 
+	public function flatten_cs_list( $array = '' ){
+		if( ! is_array( $array ) && ! strpos( $array, ',' ) ){
+			$item = ( is_numeric( $array ) ) ? [ (int)$array ] : [ (string)$array ];
+			if( sizeof( $item ) > 0 ) return $item;
+		}
+
+		if( ! is_array( $array ) && strpos( $array, ',' ) ) $array = explode( ',', $array );
+
+		$result = [];
+		foreach( $array as $value ){
+			$result = array_merge( $result, $this->flatten_cs_list( $value ) );
+		}
+		return $result;
+	}
+
 	public function sql_data_type( $type = 'string' ){
 		switch ( $type ){
 			case 'string':
-				return 'VARCHAR(50)';
+				return 'VARCHAR(150)';
 				break;
 			case 'email':
 				return 'VARCHAR(150)';
@@ -71,18 +86,30 @@ class Global_Helpers {
 			case 'integer':
 				return 'BIGINT';
 				break;
-			case 'model':
-				return 'MEDIUMINT';
-				break;
-			case 'assoc':
-				return 'MEDIUMINT';
+			case 'float':
+				return 'FLOAT(10,5)';
 				break;
 			case 'date':
 				return 'DATETIME';
+				break;
+			case 'bool':
+				return 'TINYINT';
+				break;
+			case 'array':
+				return 'VARCHAR(550)';
 				break;
 			default:
 				return 'VARCHAR(150)';
 				break;
 		}
+	}
+
+	public function get_table_name( $db = array(), $model = array(), $war_config = array() ){
+		if( empty( $db ) || empty( $model ) || empty( $war_config ) ) return false;
+
+		$table = $db->prefix;
+		$table .= ( isset( $model->table_prefix ) ) ? $model->table_prefix : $war_config->api_name . '_';
+		$table .= $model->name;
+		return $table;
 	}
 }

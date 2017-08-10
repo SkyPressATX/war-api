@@ -1,0 +1,124 @@
+<?php
+
+namespace War_Api\Data;
+
+use War_Api\Data\Query_Builder as Query_Builder;
+use War_Api\Helpers\Global_Helpers as Global_Helpers;
+
+class Data_Assoc {
+
+	private $assoc_map;
+	private $items;
+	private $db_connection;
+
+	public function __construct( $assoc_map = array(), $items = array(), $db_connection = false ){
+		$this->assoc_map = $assoc_map;
+		$this->items = $items;
+		$this->db_connection = $db_connection;
+
+	}
+
+	public function get_assoc_data(){
+
+		if( empty( $this->items ) ) return false;
+		if( empty( $this->assoc_map ) ) return false;
+
+		array_walk( $this->assoc_map, function( $assoc, $model ){
+			print_r( [ $model, $assoc ] );
+		});
+		// if( empty( $items ) || sizeof( $items ) <= 0 ) return $items;
+		// if( empty( $this->assoc_map ) || sizeof( $this->assoc_map ) <= 0 ) return $item;
+		//
+		// $this->items = $items;
+		//
+		// array_walk( $this->assoc_map, function( $assoc, $model ){
+		// 	if( empty( $assoc ) ) return;
+		// 	$assoc = (object)$assoc;
+		//
+		// 	if( ! isset( $assoc->assoc ) || ! isset( $assoc->bind ) ) return; //Improper assoc model
+		// 	if( is_numeric( $model ) && ! is_string( $model ) ) return; //Improper model name
+		//
+		// 	if( $assoc->assoc === 'many' ) $this->get_many_items( $assoc, $model );
+		// 	if( $assoc->assoc === 'one' ) $this->get_one_item( $assoc, $model );
+		//
+		// 	return;
+		// });
+		//
+		// return $this->items;
+	}
+
+	// FIXED proper filters when a model has multiple "many" relationships
+	private function get_many_items( $assoc = array(), $model = false ){
+		$bind = $assoc->bind;
+		$match = ( property_exists( $assoc, 'match' ) && isset( $assoc->match ) ) ? $assoc->match : $assoc->bind;
+		$prevent_assoc_limit = true;
+
+		$items_to_get = array_column( $this->items, $bind );
+		$assoc_params = (object)[ 'filter' => [] ];
+		$assoc_params->filter[] = $match . ':match:' . implode( '|', $items_to_get );
+
+		if( property_exists( $this->params, 'order' ) ) $assoc_params->order = $this->params->order;
+
+		// Check if sideSearch has been turned into a filter
+		if( ! empty( $this->params && isset( $this->params->filter ) ) ){
+			$this->params->filter = (array)$this->params->filter;
+			array_walk( $this->params->filter, function( $f ) use( $model, $assoc_params ){
+				$f_array = explode( ':', $f );
+				if( sizeof( $f_array ) === 3 ){
+					$assoc_params->filter[] = implode( ':', $f_array );
+					return;
+				}
+				if( sizeof( $f_array ) === 4 && $f_array[0] === $model ){
+					unset( $f_array[0] );
+					$assoc_params->filter[] = implode( ':', $f_array );
+					return;
+				}
+			});
+		}
+		$assoc_items = $this->local_call( $model, $assoc_params, $prevent_assoc_limit );
+		$this->add_assoc_to_items( $bind, $match, $model, $assoc_items );
+	}
+
+	private function get_one_item( $assoc = array(), $model = false ){
+
+		$bind = $assoc->bind;
+		$match = (property_exists( $assoc, 'match' ) && isset( $assoc->match ) ) ? $assoc->match : $assoc->bind;
+
+		if( ! isset( $this->items[0][ $bind ] ) || empty( $this->items[0][ $bind ] ) ) return;
+
+		$params = (object)[ 'filter' => [ $match . ':eq:' . $this->items[0][ $bind ] ] ];
+	 	$result = $this->local_call( $model, $params );
+		$this->items[0][ $bind ] = $result[0];
+	}
+
+	private function local_call( $end = false, $params = array(), $prevent_assoc_limit = true ){
+		if( ! $end ) return;
+		$full_end = '/' . $this->war_config->namespace . '/' . $end;
+		$req = new \WP_REST_Request( 'GET', $full_end );
+		foreach( $params as $k => $v ){
+			if( ! empty( $v ) ) $req->set_param( $k, $v );
+		}
+		$req->set_param( 'sideLoad', false );
+		$req->offsetSet( 'db_connection', $this->db_connection );
+		$req->offsetSet( 'assoc_call', true );
+		if( $prevent_assoc_limit ) $req->offsetSet( 'assoc_limit', false );
+
+		$result = rest_do_request( $req );
+		return $result->get_data();
+	}
+
+	private function add_assoc_to_items( $bind = false, $match = false, $model = false, $assoc_items = [] ){
+		if( !$bind || !$match || !$model ) return;
+		array_walk( $this->items, function( &$item ) use( $bind, $match, $model, $assoc_items ){
+			$item[ $model ] = array_values(
+				array_filter( $assoc_items, function( $assoc ) use( $bind, $match, $item, $model ){
+					$match_array = explode( ',', $assoc[ $match ] );
+					return in_array( $item[ $bind ], $match_array );
+				})
+			);
+
+			if( property_exists( $this->params, 'limit' ) && sizeof( $item[ $model ] < $this->params->limit ) )
+				$item[ $model ] = array_slice( $item[ $model ], 0, $this->params->limit );
+		});
+	}
+} // END Class
