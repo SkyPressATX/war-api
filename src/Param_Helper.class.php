@@ -106,6 +106,10 @@ class Param_Helper {
                 $x[ $key ][ 'sanitize_callback' ] = $this->sanitize_array();
             }
 
+			if( $val[ 'type' ] == 'json' ){
+				$x[ $key ][ 'sanitize_callback' ] = $this->sanitize_json();
+			}
+
             $x[ $key ] = array_merge( $x[ $key ], $val );
         }
         return $x;
@@ -161,6 +165,13 @@ class Param_Helper {
             case 'email':
                 return function($a){ $email = filter_var($a, FILTER_SANITIZE_EMAIL); return (filter_var($email, FILTER_VALIDATE_EMAIL) !== false); };
                 break;
+			case 'json':
+				return function($a){
+					if( is_array( $a ) ) $a = json_encode( $a );
+					$a = json_decode( $a );
+					return ( json_last_error() == JSON_ERROR_NONE );
+				};
+				break;
         }
         return function($a){ return true; };
     }
@@ -186,6 +197,12 @@ class Param_Helper {
 			if( $a == 'true' || $a === (int)1 ) return true;
 			if( $a == 'false' || $a === (int)0 ) return false;
 			return (string)$a;
+		};
+	}
+
+	public function sanitize_json(){
+		return function( $a ){
+			return $a;
 		};
 	}
 

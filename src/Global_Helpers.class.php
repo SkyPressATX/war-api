@@ -17,7 +17,8 @@ class Global_Helpers {
         return $old_prefix;
 	}
 
-	public function war_encrypt( $string ){
+	public function war_encrypt( $string = false ){
+		if( ! $string ) return $string;
         $iv_size = mcrypt_get_iv_size( MCRYPT_RIJNDAEL_256, MCRYPT_MODE_CFB );
         $iv = mcrypt_create_iv( $iv_size, MCRYPT_RAND) ;
         $key = hash( 'sha256', SECURE_AUTH_KEY, true );
@@ -26,13 +27,14 @@ class Global_Helpers {
         return base64_encode( $com );
     }
 
-    public function war_decrypt( $string ){
+    public function war_decrypt( $string = false ){
         if(! $string) return true;
         $iv_size = mcrypt_get_iv_size( MCRYPT_RIJNDAEL_256, MCRYPT_MODE_CFB );
         $debase = base64_decode( $string );
         $iv = substr( $debase, 0, $iv_size );
         $val = substr( $debase, $iv_size );
-        $dc = mcrypt_decrypt( MCRYPT_RIJNDAEL_256, hash( 'sha256', SECURE_AUTH_KEY, true ), $val, MCRYPT_MODE_CFB, $iv );
+		$key = hash( 'sha256', SECURE_AUTH_KEY, true );
+        $dc = mcrypt_decrypt( MCRYPT_RIJNDAEL_256, $key, $val, MCRYPT_MODE_CFB, $iv );
         return ( $dc ) ? $dc : $val;
     }
 

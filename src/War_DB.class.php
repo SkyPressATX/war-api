@@ -82,7 +82,7 @@ class War_DB {
 		$check = $this->db_call( $query )->fetch_row()[0];
 		if( $check !== NULL ) $this->safe_table[] = $table;
 
-		if( $check === NULL ) throw new \Exception( "Table $table doesn't exists" );
+		if( $check === NULL ) throw new \Exception( "Table $table doesn't exist" );
 		return true;
 	}
 
@@ -169,12 +169,12 @@ class War_DB {
 
 	//Get creds from wp_config.php, return default connection to wp db
 	private function get_wp_db(){
-		$db_user     = ( defined( DB_USER ) )     ? DB_USER     : NULL;
-		$db_password = ( defined( DB_PASSWORD ) ) ? DB_PASSWORD : NULL;
-		$db_host 	 = ( defined( DB_HOST ) )     ? DB_HOST     : NULL;
-		$db_name     = ( defined( DB_NAME ) )     ? DB_NAME     : NULL;
+		$db_user     = ( DB_USER !== NULL )     ? DB_USER     : NULL;
+		$db_password = ( DB_PASSWORD !== NULL ) ? DB_PASSWORD : NULL;
+		$db_host 	 = ( DB_HOST !== NULL )     ? DB_HOST     : NULL;
+		$db_name     = ( DB_NAME !== NULL )     ? DB_NAME     : NULL;
 
-		$this->db = new mysqli( $db_host, $db_user, $db_password, $db_name );
+		return new \mysqli( $db_host, $db_user, $db_password, $db_name );
 	}
 
 	//Check if we have a proper mysqli connection
