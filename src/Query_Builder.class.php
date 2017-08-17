@@ -131,7 +131,7 @@ class Query_Builder {
 		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Insert From Query Method' );
 		$query_map = (object)$query_map;
 		if( ! property_exists( $query_map, 'table' ) )   throw new \Exception( get_class() . ': No Table Provided for Insert From Query Method' );
-		if( ! property_exists( $query_map, 'keys' ) ) throw new \Exception( get_class() . ': No Columns Array Provided for Insert From Query Method' );
+		if( ! property_exists( $query_map, 'keys' ) ) throw new \Exception( get_class() . ': No Keys Array Provided for Insert From Query Method' );
 		if( ! property_exists( $query_map, 'query' ) )   throw new \Exception( get_class() . ': No Select Query Map Provided for Insert From Query Method' );
 
 		$query_map->query = $this->select( $query_map->query );
@@ -147,7 +147,6 @@ class Query_Builder {
 			array_walk( $query_map->keys, function( $k ){ $this->update[] = $k . ' = VALUES( ' . $k . ' )'; });
 			$this->query .= ' ON DUPLICATE KEY UPDATE ' . implode( ', ', $this->update );
 		}
-
 		return $this->query;
 	}
 
@@ -193,7 +192,7 @@ class Query_Builder {
 		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Update From Query Method' );
 		$query_map = (object)$query_map;
 		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Update From Query Method' );
-		if( ! property_exists( $query_map, 'set' ) ) throw new \Exception( get_class() . ': No Columns Array Provided for Update From Query Method' );
+		if( ! property_exists( $query_map, 'set' ) ) throw new \Exception( get_class() . ': No Set Array Provided for Update From Query Method' );
 		if( ! property_exists( $query_map, 'query' ) )   throw new \Exception( get_class() . ': No Select Query Map Provided for Update From Query Method' );
 		if( ! property_exists( $query_map, 'on' ) )   throw new \Exception( get_class() . ': No Join Map Provided for Update From Query Method' );
 

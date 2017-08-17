@@ -205,7 +205,7 @@ class War_DB {
 	private function db_call( $query = false ){
 		if( ! $query ) throw new \Exception( get_class() . ': No Query Provided for DB Call Method' );
 		if( ! is_string( $query ) ) throw new \Exception( get_class() . ': Query Provided is Not A String for DB Call Method' );
-		// echo "$query\n\n";
+		echo "$query\n\n";
 		$result = $this->db->query( $query );
 		if( ! $result ) throw new \Exception( get_class() . ': ' . $this->db->error );
 		return $result;
