@@ -17,7 +17,7 @@ class DAO {
 	private $query_builder;
 	private $query_assoc;
 	private $help;
-	private $db = false;
+	private $war_db;
 
 	private $request;
 	private $model;
@@ -28,8 +28,7 @@ class DAO {
 
 	public function __construct( $db_info = array(), $model = array(), $request = array(), $war_config = array() ){
 		try {
-			if( ! empty( $db_info ) ) $this->db = $this->mysqli_connection( $db_info );
-			$this->war_db = War_DB::init( $this->db );
+			$this->war_db = War_DB::init( $db_info );
 		}catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );
 		}
@@ -40,6 +39,7 @@ class DAO {
 		$this->war_config = $war_config;
 		$this->isolate = $this->determine_isolation();
 		$this->table_prefix = $this->get_table_prefix( $db_info );
+		$this->table = esc_sql( $this->table_prefix . $this->model->name );
 
 		$this->query_search = new Query_Search;
 		$this->help = new Global_Helpers;
@@ -55,7 +55,6 @@ class DAO {
 	public function read_all(){
 		try {
 			$this->add_current_user_to_filter();
-			$table = $this->table_prefix . $this->model->name;
 			$this->query_map = [];
 
 			if( property_exists( $this->model, 'assoc' ) && ! empty( $this->model->assoc ) )
@@ -64,17 +63,18 @@ class DAO {
 			//Build war_db select_all() params
 			$this->query_map[ 'query' ] = [
 				'select' => ( property_exists( $this->params, 'select' ) ) ? $this->params->select : [],
-				'table'   => $table,
-				'where'  => $this->query_search->parse_filters( $this->params->filter, $table ),
+				'table'   => $this->table,
+				'where'  => $this->query_search->parse_filters( $this->params->filter, $this->table ),
 				'limit'  => $this->query_search->parse_limit( $this->params->limit ),
-				'order'  => $this->query_search->parse_order( $this->params->order, $table ),
+				// 'order'  => $this->query_search->parse_order( $this->params->order, $table ),
 				'offset' => $this->query_search->parse_page( $this->params->page, $this->params->limit )
 			];
+			if( property_exists( $this->params, 'order' ) ) $this->query_map[ 'query' ][ 'order' ] = $this->query_search->parse_order( $this->params->order, $this->table );
 
 			// Lets look for any assoc queries that have a where statement. Pull that data first
 			foreach( $this->query_map[ 'assoc' ] as $model => &$assoc ){
 				if( ! empty( $assoc[ 'query' ][ 'where' ] ) ){
-					$assoc_where = $this->query_assoc->get_side_search_filter( $assoc, $model, $table );
+					$assoc_where = $this->query_assoc->get_side_search_filter( $assoc, $model, $this->table );
 					if( $assoc_where ){
 						if( ! empty( $assoc_where[ 'data' ] ) ) $assoc[ 'data' ] = $assoc_where[ 'data' ];
 						$this->query_map[ 'query' ][ 'where' ][] = $assoc_where[ 'filter' ];
@@ -84,7 +84,7 @@ class DAO {
 			}
 
 			$total = $this->query_map[ 'query' ];
-			$total[ 'select' ] = 'COUNT(' . $table . '.id)';
+			$total[ 'select' ] = 'COUNT(' . $this->table . '.id)';
 			unset( $total[ 'limit' ] );
 			unset( $total[ 'offset' ] );
 
@@ -114,7 +114,6 @@ class DAO {
 			}
 
 			return $result;
-
 		} catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );
 		}
@@ -140,12 +139,15 @@ class DAO {
 	public function insert_one(){
 		try {
 			$this->unset_empty_values();
+			$this->create_table();
+			$this->adjust_table_columns();
+			$this->params->user = $this->request->current_user->id;
 			$insert_map = [
-				'table' => $this->table_prefix . $this->model->name
+				'table' => $this->table,
+				'data'  => $this->params
 			];
-			return true;
-			// $insert_query = $this->qb->insert_data( $this->model->params, $this->params );
-			// return $this->db->insert( $this->table, $insert_data );
+
+			return $this->war_db->insert( $insert_map );
 		} catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );
 		}
@@ -153,7 +155,24 @@ class DAO {
 
 	public function update_one(){
 		try {
-			return true;
+			$this->unset_empty_values();
+			$this->add_current_user_to_filter();
+			$this->adjust_table_columns();
+
+			if( ! property_exists( $this->params, 'filter' ) ) $this->params->filter = [];
+			$this->params->filter[] = 'id:eq:' . $this->params->id;
+
+			$data = (object)(array)$this->params;
+			if( property_exists( $data, 'id' ) ) unset( $data->id );
+			if( property_exists( $data, 'filter' ) ) unset( $data->filter );
+
+			$update_map = [
+				'table' => $this->table,
+				'data'  => $data,
+				'where' => $this->query_search->parse_filters( $this->params->filter, $this->table )
+			];
+
+			return $this->war_db->update( $update_map );
 		} catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );
 		}
@@ -161,10 +180,76 @@ class DAO {
 
 	public function delete_one(){
 		try {
-			return true;
+			$this->add_current_user_to_filter();
+
+			if( ! property_exists( $this->params, 'filter' ) ) $this->params->filter = [];
+			$this->params->filter[] = 'id:eq:' . $this->params->id;
+
+			$delete_map = [
+				'table' => $this->table,
+				'where' => $this->query_search->parse_filters( $this->params->filter, $this->table )
+			];
+
+			return $this->war_db->delete( $delete_map );
 		} catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );
 		}
+	}
+
+	private function create_table(){
+		$create_map = [
+			'table'   => $this->table,
+			'data'    => $this->query_search->parse_sql_types( array_keys( $this->model->params ), $this->model->params ),
+			'primary' => $this->query_search->parse_primary_key( $this->model->params ),
+			'keys'    => [ '`id`' ]
+		];
+
+		if( property_exists( $this->model, 'assoc' ) ){
+			foreach( $this->model->assoc as $model => $map ){ if( isset( $map[ 'bind' ] ) ) $create_map[ 'keys' ][] = '`' . $map[ 'bind' ] . '`'; }
+		}
+		
+		$create_map[ 'data' ] = array_merge( $this->default_table_columns(), $create_map[ 'data' ] );
+
+		return $this->war_db->create_table( $create_map );
+	}
+
+	private function adjust_table_columns(){
+		//Get our columns to compare against
+		$model_col   = array_merge( [ 'id', 'created_on', 'updated_on', 'user' ], array_keys( (array)$this->model->params ) );
+		$current_col_map = [
+			'select' => '`COLUMN_NAME`',
+			'table'  => 'INFORMATION_SCHEMA.COLUMNS',
+			'where'  => [ '`TABLE_NAME` = "' . $this->table . '"' ]
+		];
+		$current_col = array_column( $this->war_db->select_query( $current_col_map ), 'COLUMN_NAME' );
+
+		$remove_columns = array_values( array_diff( $current_col, $model_col ) );
+		$add_columns    = array_values( array_diff( $model_col, $current_col ) );
+
+		if( ! empty( $remove_columns ) ){
+			array_walk( $remove_columns, function( &$col ){
+				$col = 'DROP `' . esc_sql( $col ) . '`';
+			});
+			$remove_col_map = [
+				'table' => $this->table,
+				'data'  => $remove_columns
+			];
+			$remove_call = $this->war_db->alter_table( $remove_col_map );
+		}
+
+		if( ! empty( $add_columns ) ){
+			$add_columns = $this->query_search->parse_sql_types( $add_columns, $this->model->params );
+			array_walk( $add_columns, function( &$col ){
+				$col = 'ADD ' . $col;
+			});
+			$add_col_map = [
+				'table' => $this->table,
+				'data'  => $add_columns
+			];
+			$add_call = $this->war_db->alter_table( $add_col_map );
+		}
+
+		return true;
 	}
 
 	private function unset_empty_values(){
@@ -173,7 +258,7 @@ class DAO {
 			if( is_bool( $p ) && $p === false ) $p = (int)0;
 			if( is_string( $p ) && empty( $p ) ) unset( $this->params->$k );
 		});
-		$this->params = $params;
+		$this->params = (object)$params;
 	}
 
 	private function determine_isolation(){
@@ -199,25 +284,18 @@ class DAO {
 		return $table_prefix;
 	}
 
-	// Connect to mysql using provided credentials
-	private function mysqli_connection( $db_info = array() ){
-		$db_info = (object)$db_info;
-		if( ! property_exists( $db_info, 'db_port' ) ) $db_info->db_port = 33306; //Default mysql port
-
-		$db = mysqli_init();
-		$db->options( MYSQLI_OPT_INT_AND_FLOAT_NATIVE, 1 );
-		if( property_exists( $db_info, 'ssl' ) && is_array( $db_info->ssl ) )
-			$db->ssl_set( $db_info->ssl[0], $db_info->ssl[1], $db_info->ssl[2], $db_info->ssl[3], $db_info->ssl[4] );
-
-		$db->real_connect(
-			$db_info->db_host,
-			$db_info->db_user,
-			$db_info->db_password,
-			$db_info->db_name,
-			$db_info->db_port
+	/**
+	 * dao_default_create_values
+	 *
+	 * @return Array
+	 */
+	private function default_table_columns(){
+		return array(
+			'`id` MEDIUMINT NOT NULL AUTO_INCREMENT',
+			'`created_on` datetime DEFAULT CURRENT_TIMESTAMP',
+			'`updated_on` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+			'`user` MEDIUMINT NOT NULL'
 		);
-
-		return $db;
-
 	}
+
 }

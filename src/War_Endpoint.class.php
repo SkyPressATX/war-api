@@ -45,11 +45,6 @@ class War_Endpoint {
 	        $war_request->war_config = $this->war_config;
 			$war_request->current_user = $this->current_user;
 
-			// $war_request->assoc = (object)[];
-			// if( $request->offsetExists( 'db_connection' ) ) $war_request->assoc->db_connection = $request->offsetGet( 'db_connection' );
-			// if( $request->offsetExists( 'assoc_limit' ) ) $war_request->assoc->limit = $request->offsetGet( 'assoc_limit' );
-			// if( $request->offsetExists( 'assoc_call ' ) ) $war_request->assoc->call = $request->offsetGet( 'assoc_call' );
-
 	        if( method_exists( $this->endpoint->callback[0], $this->endpoint->callback[1] ) ){
 	            $result = call_user_func( [ $this->endpoint->callback[0], $this->endpoint->callback[1] ], $war_request );
 				return $result;
@@ -57,7 +52,7 @@ class War_Endpoint {
 	            throw new \Exception( 'Endpoint Method Not Found' );
 			}
 		} catch( \Exception $e ){
-			return new \WP_REST_Response( $e->getMessage() );
+			return $this->return_error( $e->getMessage() );
 		}
     }
 
@@ -82,5 +77,12 @@ class War_Endpoint {
 
 		if( ! property_exists( $this->endpoint, 'access' ) )
 			$this->endpoint->access = $this->war_config->default_access;
+	}
+
+	private function return_error( $error = false ){
+		$err = [ 'status' => 'error', 'message' => $error ];
+		$response = new \WP_REST_Response( $err );
+		$response->set_status( 500 );
+		return $response;
 	}
 }

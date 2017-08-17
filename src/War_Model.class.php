@@ -2,7 +2,6 @@
 
 namespace War_Api;
 
-// use War_Api\Helpers\Param_Helper as Param_Helper;
 use War_Api\Security\Role_Check as Role_Check;
 use War_Api\War_Endpoint as War_Endpoint;
 use War_Api\Data\DAO as DAO;
@@ -41,35 +40,35 @@ class War_Model {
 	private function create_model_endpoints(){
 		return [
 			'read_records' => [
-				'uri' 		=> '/' . $this->model->name,
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ),
 				'method'	=> \WP_REST_Server::READABLE,
 				'callback' 	=> ( isset( $this->method->callback->read_items ) ) ? $this->method->callback->read_items : [ $this, 'read_records' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
 				'params'	=> $this->param_helper->get_read_records_params()
 			],
 			'create_record' => [
-				'uri' 		=> '/' . $this->model->name,
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ),
 				'method' 	=> \WP_REST_Server::CREATABLE,
 				'callback' 	=> ( isset( $this->method->callback->create_item ) ) ? $this->method->callback->create_item : [ $this, 'create_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->create : $this->model->access,
 				'params'	=> $this->model->params
 			],
 			'read_record' => [
-				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
 				'method'	=> \WP_REST_Server::READABLE,
 				'callback'  => ( isset( $this->method->callback->read_item ) ) ? $this->method->callback->read_item : [ $this, 'read_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
 				'params'	=> $this->param_helper->get_read_record_params()
 			],
 			'edit_record' => [
-				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
 				'method'    => \WP_REST_Server::EDITABLE,
-				'callback'  => ( isset( $this->method->callback->update_item ) ) ? $this->method->callback->update_item : [ $this, 'edit_record' ],
+				'callback'  => ( isset( $this->method->callback->update_item ) ) ? $this->method->callback->update_item : [ $this, 'update_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->update : $this->model->access,
-				'params'	=> $this->strip_required( $this->model->params )
+				'params'	=> $this->strip_required_and_default( $this->model->params )
 			],
 			'delete_record' => [
-				'uri' 		=> '/' . $this->model->name . '/(?P<id>\d+)',
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
 				'method'    => \WP_REST_Server::DELETABLE,
 				'callback'  => ( isset( $this->method->callback->delete_item ) ) ? $this->method->callback->delete_item : [ $this, 'delete_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->delete : $this->model->access
@@ -109,7 +108,6 @@ class War_Model {
 		try {
 			$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
 			$db_info = ( property_exists( $this->model, 'db_info' ) ) ? $this->model->db_info : array();
-
 			$dao = new DAO( $db_info, $this->model, $request, $this->war_config );
 			$item = $dao->read_one();
 
@@ -143,16 +141,19 @@ class War_Model {
 		}catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );
 		}
-
-
 	}
 
 	public function delete_record( $request ){
-		$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
-		$db_info = ( property_exists( $this->model, 'db_info' ) ) ? $this->model->db_info : array();
+		try {
+			if( ! property_exists( $request->params, 'id' ) ) throw new \Exception( 'No Record ID Provided' );
+			$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
+			$db_info = ( property_exists( $this->model, 'db_info' ) ) ? $this->model->db_info : array();
 
-		$dao = new DAO( $db_info, $this->model, $request, $this->war_config );
-		return $dao->delete_one();
+			$dao = new DAO( $db_info, $this->model, $request, $this->war_config );
+			return $dao->delete_one();
+		}catch( \Exception $e ){
+			throw new \Exception( $e->getMessage() );
+		}
 	}
 
 	private function set_model_filters(){
@@ -160,9 +161,15 @@ class War_Model {
 		if( isset( $this->model->pre_return ) ) add_filter( 'war_pre_return_' . $this->model->name, $this->model->pre_return, 15 );
 	}
 
-	private function strip_required( $params ){
+	private function strip_required_and_default( $params ){
 		array_walk( $params, function( &$v, $k ){
-			if( is_array( $v ) && isset( $v[ 'required' ] ) ) unset( $v[ 'required' ] );
+			if( is_array( $v ) ){
+				if( isset( $v[ 'required' ] ) ) unset( $v[ 'required' ] );
+				if( isset( $v[ 'default' ] ) )  unset( $v[ 'default' ] );
+			}
+			if( is_string( $v ) && $v === 'bool' ){
+				$v = [ 'type' => 'integer' ];
+			}
 		});
 		return $params;
 	}

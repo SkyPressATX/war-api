@@ -31,7 +31,7 @@ class Query_Search {
 		foreach( $filters as $i => $filter ){
 			$f_explode = explode( ':', $filter );
 
-			if( sizeof( $f_explode ) > 3 ){
+			if( sizeof( $f_explode ) > 3 || ( end( $f_explode ) == "null" || end( $f_explode ) == "nnull" ) ){
 				$model = $f_explode[0];
 				array_splice( $f_explode, 0, 1);
 
@@ -44,6 +44,28 @@ class Query_Search {
 		};
 
 		return $result;
+	}
+
+	public function parse_sql_types( $params = array(), $param_map = array() ){
+		if( empty( $params ) || empty( $param_map ) ) return array();
+		$this->param_map = $param_map;
+		array_walk( $params, function( &$param ){
+			$type = ( isset( $this->param_map[ $param ] ) ) ? $this->param_map[ $param ] : $param;
+			$param = '`' . $param .'` ' . $this->help->sql_data_type( $type );
+		});
+
+		return $params;
+	}
+
+	public function parse_primary_key( $params = array() ){
+		if( empty( $params ) ) return array();
+		$primary_keys = array_keys( array_filter( $params, function( $param ){
+			return ( is_array( $param ) && isset( $param[ 'unique' ] ) && $param[ 'unique' ] );
+		}) );
+		array_walk( $primary_keys, function( &$key ){
+			$key = '`' . $key . '`';
+		});
+		return $primary_keys;
 	}
 	/**
 	 * $group Array( $string, $string, $string )
@@ -64,7 +86,8 @@ class Query_Search {
 		array_walk( $orders, function( &$order, $i, $model ){
 			$order = $this->build_order_query( trim( $order ), $model );
 		}, $model );
-		return $orders;
+
+		return implode( ', ', $orders );
 	}
 
 	/**
@@ -146,6 +169,12 @@ class Query_Search {
 				$la = explode( '|', $f[2] );
 				array_walk( $la, function( &$l ){ $l = $this->help->quote_it( $l ); });
 				return $model . '.' . $f[0] . ' NOT IN ( ' . implode( ',', $la ) . ' )';
+				break;
+			case 'null':
+				return $model . '.' . $f[0] . ' IS NULL';
+				break;
+			case 'nnull':
+				return $model . '.' . $f[0] . ' IS NOT NULL';
 				break;
 		}
 	}
