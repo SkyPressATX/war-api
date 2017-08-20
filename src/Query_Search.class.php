@@ -136,10 +136,10 @@ class Query_Search {
 
 		switch( $f[1] ){
 			case 'like':
-				return $model . '.' . $f[0] . ' LIKE("%' . preg_replace( $san_regex, '', $f[2] ) . '%")';
+				return $model . '.' . $f[0] . ' LIKE "%' . preg_replace( $san_regex, '', $f[2] ) . '%"';
 				break;
 			case 'nlike':
-				return $model . '.' . $f[0] . ' NOT LIKE("%' . preg_replace( $san_regex, '', $f[2] ) . '%")';
+				return $model . '.' . $f[0] . ' NOT LIKE "%' . preg_replace( $san_regex, '', $f[2] ) . '%"';
 				break;
 			case 'gt':
 				return $model . '.' . $f[0] . ' > ' . $this->help->quote_it( $f[2] );

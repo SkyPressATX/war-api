@@ -205,9 +205,12 @@ class DAO {
 		];
 
 		if( property_exists( $this->model, 'assoc' ) ){
-			foreach( $this->model->assoc as $model => $map ){ if( isset( $map[ 'bind' ] ) ) $create_map[ 'keys' ][] = '`' . $map[ 'bind' ] . '`'; }
+			foreach( $this->model->assoc as $model => $map ){
+				if( isset( $map[ 'bind' ] ) && ! in_array( '`' . $map[ 'bind' ] . '`', $create_map[ 'keys' ] ) && ! in_array( '`' . $map[ 'bind' ] . '`', $create_map[ 'primary' ] ) )
+					$create_map[ 'keys' ][] = '`' . $map[ 'bind' ] . '`';
+			}
 		}
-		
+
 		$create_map[ 'data' ] = array_merge( $this->default_table_columns(), $create_map[ 'data' ] );
 
 		return $this->war_db->create_table( $create_map );

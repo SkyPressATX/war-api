@@ -25,8 +25,8 @@ class Query_Builder {
 		$query = 'SELECT ';
 
 		if( is_array( $query_map->table ) ){
-			$as = array_keys( $query_map->table )[0];
 			$table = array_values( $query_map->table )[0];
+			$as = array_keys( $query_map->table )[0];
 		}
 		if( is_string( $query_map->table ) ){
 			$as = $query_map->table;
@@ -50,7 +50,7 @@ class Query_Builder {
 		}
 
 		$query .= ( is_array( $query_map->select ) ) ? implode( ', ', $query_map->select ) : $query_map->select;
-		$query .= ' FROM `' . $table . '` AS `' . $as . '`';
+		$query .= ' FROM ' . $table . ' AS `' . $as . '`';
 
 		if( property_exists( $query_map, 'join' ) ){
 			array_walk( $query_map->join, function( &$join, $i ){
@@ -63,7 +63,7 @@ class Query_Builder {
 				}
 				if( property_exists( $join, 'table' ) ){
 					if( ! is_array( $join->table ) ) throw new \Exception( get_clasS() . ': Table provided in Join Map but is Not an Array in Select Method' );
-					$j = '`' . array_values( $join->table )[0] . '` AS `' . array_keys( $join->table )[0] . '`';
+					$j = array_values( $join->table )[0] . ' AS `' . array_keys( $join->table )[0] . '`';
 				}
 
 				if( ! isset( $j ) ) throw new \Exception( get_class() . ': No Query or Table provided to Join in Select Method' );
@@ -74,9 +74,14 @@ class Query_Builder {
 		}
 
 		if( property_exists( $query_map, 'where' ) && ! empty( $query_map->where ) )
-		$query .= ' WHERE '  . implode( ' AND ', $query_map->where );
-		if( property_exists( $query_map, 'group' ) )  $query  .= ' GROUP BY ' . $query_map->group;
-		if( property_exists( $query_map, 'order' ) )  $query  .= ' ORDER BY ' . $query_map->order;
+			$query .= ' WHERE '  . implode( ' AND ', $query_map->where );
+
+		if( property_exists( $query_map, 'group' ) )
+			$query .= ( is_array( $query_map->group ) ) ? ' GROUP BY ' . implode( ', ', $query_map->group ) : ' GROUP BY ' . $query_map->group;
+
+		if( property_exists( $query_map, 'order' ) )
+			$query .= ( is_array( $query_map->order ) ) ? ' ORDER BY ' . implode( ', ', $query_map->order ) : ' ORDER BY ' . $query_map->order;
+
 		if( property_exists( $query_map, 'limit' ) )  $query  .= ' LIMIT '    . $query_map->limit;
 		if( property_exists( $query_map, 'offset' ) ) $query  .= ' OFFSET '   . $query_map->offset;
 
@@ -86,9 +91,12 @@ class Query_Builder {
 	public function insert_from_data( $query_map = array() ){
 		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Insert From Data Method' );
 		$query_map = (object)$query_map;
-		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Insert FRom Data Method' );
+		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Insert From Data Method' );
+		if( ! property_exists( $query_map, 'data' ) )  throw new \Exception( get_class() . ': No Data Provided for Insert From Data Method' );
 
 		$query_map->data = (array)$query_map->data;
+
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
 
 		$this->query = ( $query_map->update ) ? 'INSERT INTO ' . $query_map->table : 'INSERT IGNORE INTO ' . $query_map->table;
 
@@ -138,8 +146,10 @@ class Query_Builder {
 
 		array_walk( $query_map->keys, function( &$k ){ $c = '`' . $k . '`'; });
 
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
+
 		$this->query = ( $query_map->update ) ? 'INSERT INTO ' . $query_map->table : 'INSERT IGNORE INTO ' . $query_map->table;
-		$this->query .= ' ( ' . implode( ',', $query_map->keys ) . ' )';
+		$this->query .= ' ( ' . implode( ', ', $query_map->keys ) . ' )';
 		$this->query .= ' ' . $query_map->query;
 
 		if( $query_map->update ){
@@ -154,6 +164,8 @@ class Query_Builder {
 		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Update From Data Method' );
 		$query_map = (object)$query_map;
 		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Update From Data Method' );
+
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
 
 		$query_map->data = (array)$query_map->data;
 
@@ -197,6 +209,8 @@ class Query_Builder {
 		if( ! property_exists( $query_map, 'on' ) )   throw new \Exception( get_class() . ': No Join Map Provided for Update From Query Method' );
 
 		$query_map->query = $this->select( $query_map->query );
+
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
 
 		$this->query = 'UPDATE ' . $query_map->table . ' AS a INNER JOIN( ' . $query_map->query .' ) AS b';
 

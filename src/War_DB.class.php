@@ -5,40 +5,6 @@ namespace War_Api\Data;
 use War_Api\Data\Query_Builder as Query_Builder;
 use War_Api\Helpers\Global_Helpers as Global_Helpers;
 
-/**
-* Example Query Map
-* $war_db_map = [
-*	 'query' => [
-*		 'select' => [],
-*		 'table'   => 'table',
-*		 'join'   => [
-*			 [
-*				 'query' => [],
-*				 'on'    => '',
-*				 'as'    => ''
-*			 ]
-*		 ],
-*		 'where'  => [],
-*        'group'  => [],
-*		 'order'  => [],
-*		 'limit'  => 10,
-*		 'offset' => 0,
-*		 'query'  => NULL //To Be filled in By War_DB
-*	 ],
-*	 'assoc' => [
-*		 [
-*			 'map'   => [
-*				 'assoc' => '',
-*				 'bind'  => '',
-*				 'match' => '',
-*				 'table' => ''
-*			 ],
-*			 'query' => []
-*		 ]
-*	 ]
-* ];
-**/
-
 class War_DB {
 
 	private $db;
@@ -205,7 +171,7 @@ class War_DB {
 	private function db_call( $query = false ){
 		if( ! $query ) throw new \Exception( get_class() . ': No Query Provided for DB Call Method' );
 		if( ! is_string( $query ) ) throw new \Exception( get_class() . ': Query Provided is Not A String for DB Call Method' );
-		echo "$query\n\n";
+		// echo "$query\n\n";
 		$result = $this->db->query( $query );
 		if( ! $result ) throw new \Exception( get_class() . ': ' . $this->db->error );
 		return $result;
