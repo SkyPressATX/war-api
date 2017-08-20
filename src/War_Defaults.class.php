@@ -26,7 +26,10 @@ class War_Defaults {
             'permalink' => '/posts/%postname%/',
 			'default_access' => false,
 			'war_jwt_expire' => ( time() + ( DAY_IN_SECONDS * 30 ) ),
-			'isolate_user_data' => true
+			'isolate_user_data' => true,
+			'limit' => 10,
+			'sideLimit' => 10,
+			'filter_sideSearch_results' => false
         ];
 	}
 

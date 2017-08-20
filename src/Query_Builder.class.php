@@ -4,114 +4,256 @@ namespace War_Api\Data;
 
 use War_Api\Data\Query_Search as Query_Search;
 use War_Api\Helpers\Global_Helpers as Global_Helpers;
-use War_Api\Security\War_User as War_User;
 
 class Query_Builder {
 
+	private $query_search;
+	private $query;
 	private $help;
-	private $current_user;
 
-	public function __construct( $current_user = [] ){
-		$this->current_user = $current_user;
-		if( empty( $this->current_user ) ) $this->get_current_user();
+	public function __construct(){
+		$this->query_search = new Query_Search;
 		$this->help = new Global_Helpers;
 	}
 
-	/**
-	 * $table should already be properly prefixed
-	 **/
-	public function create_table_query( $table, $params ){
-		$primary_keys = array();
-		$foreign_keys = array();
-		$values = $this->default_table_columns();
-		foreach( $params as $param => $val ){
-			if( is_string( $val ) ) $val = [ 'type' => esc_sql( $val ) ];
-			$val = (object)$val;
-			$type = array( '`' . esc_sql( $param ) . '`' ); //Start building an array we can implode later
-			if( isset( $val->type ) ) $type[] = $this->help->sql_data_type( $val->type );
-			if( isset( $val->unique ) && $val->unique ) $primary_keys[] = esc_sql( $param ); // If this is required, set it as a primary key
-			if( in_array( $param, [ 'id', 'created_on', 'updated_on', 'user' ] ) ) continue; // Lets not duplicate things
-			$values[] = implode( ' ', $type ); //Add the type array as a string to the Values array
+	public function select( $query_map = array() ){
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Select Method' );
+		$query_map = (object)$query_map;
+		if( ! property_exists( $query_map, 'table' ) )
+			throw new \Exception( get_class() . ': No Table Provided for Select Method' );
+
+		$query = 'SELECT ';
+
+		if( is_array( $query_map->table ) ){
+			$table = array_values( $query_map->table )[0];
+			$as = array_keys( $query_map->table )[0];
+		}
+		if( is_string( $query_map->table ) ){
+			$as = $query_map->table;
+			$table = $query_map->table;
 		}
 
-		if( ! empty( $primary_keys ) ) $values[] = 'PRIMARY KEY(' . implode( ',', $primary_keys ) . ')';
-		$values[] = 'KEY (`id`)';
-
-		return 'CREATE TABLE IF NOT EXISTS ' . esc_sql( $table ) . ' (' . implode( ', ', $values ) . ')';
-	}
-
-	public function add_col_query( $table, $col ){
-		$q = 'ALTER TABLE ' . esc_sql( $table );
-
-		foreach( $col as $k => $c ){
-			$x[] = ' ADD `' . esc_sql( $k ) . '` ' . $this->help->sql_data_type( $c[ 'type' ] );
+		if( property_exists( $query_map, 'select' ) ){
+			if( empty( $query_map->select ) ) $query_map->select = $as . '.*';
+			if( is_array( $query_map->select ) ){
+				array_walk( $query_map->select, function( &$select, $i, $as ){
+					if( is_array( $select ) ){
+						array_walk( $select, function( &$s, $k, $as ){
+							$s = ( is_string( $as ) ) ? $as . '.' . $s : $s;
+						}, $i );
+						$select = implode( ', ', $select );
+					}else{
+						$select = $as . '.' . $select;
+					}
+				}, $as );
+			}
 		}
 
-		$q .= implode( ',', $x );
-		return $q;
-	}
+		$query .= ( is_array( $query_map->select ) ) ? implode( ', ', $query_map->select ) : $query_map->select;
+		$query .= ' FROM ' . $table . ' AS `' . $as . '`';
 
-	public function drop_col_query( $table, $col ){
-		return 'ALTER TABLE ' . esc_sql( $table ) . ' DROP ' . implode( ', DROP ', $col );
-	}
+		if( property_exists( $query_map, 'join' ) ){
+			array_walk( $query_map->join, function( &$join, $i ){
+				$join = (object)$join;
+				if( ! property_exists( $join, 'on' ) ) throw new \Exception( get_class() . ': No Join "On" provided in Select Method' );
+				if( ! property_exists( $join, 'type' ) ) throw new \Exception( get_class() . ': No Join "Type" provided in Select Method' );
+				if( property_exists( $join, 'query' ) ){
+					if( ! property_exists( $join, 'as' ) ) throw new \Exception( get_class() . ': No "As" provided for Join Map in Select Method' );
+					$j = '( ' . $this->select( $join->query ) . ' )';
+				}
+				if( property_exists( $join, 'table' ) ){
+					if( ! is_array( $join->table ) ) throw new \Exception( get_clasS() . ': Table provided in Join Map but is Not an Array in Select Method' );
+					$j = array_values( $join->table )[0] . ' AS `' . array_keys( $join->table )[0] . '`';
+				}
 
-	public function insert_data( $model_params, $requested_params ){
-		$model_params = (array)$model_params;
-		$requested_params = (array)$requested_params;
-
-		// Strip invalid requested_params
-		foreach( $requested_params as $key => $val ){
-			if( ! isset( $model_params[ $key ] ) ) unset( $requested_params[ $key ] );
+				if( ! isset( $j ) ) throw new \Exception( get_class() . ': No Query or Table provided to Join in Select Method' );
+				if( is_string( $join->on ) ) $join->on = [ $join->on ];
+				$join = strtoupper( $join->type ) . ' JOIN ' . $j . ' ON( ' . implode( ' AND ', $join->on ) . ' )';
+			});
+			$query .= ' ' . implode( ' ', $query_map->join );
 		}
 
-		$requested_params[ 'user' ] = $this->current_user->id;
+		if( property_exists( $query_map, 'where' ) && ! empty( $query_map->where ) )
+			$query .= ' WHERE '  . implode( ' AND ', $query_map->where );
 
-		return $requested_params;
+		if( property_exists( $query_map, 'group' ) )
+			$query .= ( is_array( $query_map->group ) ) ? ' GROUP BY ' . implode( ', ', $query_map->group ) : ' GROUP BY ' . $query_map->group;
+
+		if( property_exists( $query_map, 'order' ) )
+			$query .= ( is_array( $query_map->order ) ) ? ' ORDER BY ' . implode( ', ', $query_map->order ) : ' ORDER BY ' . $query_map->order;
+
+		if( property_exists( $query_map, 'limit' ) )  $query  .= ' LIMIT '    . $query_map->limit;
+		if( property_exists( $query_map, 'offset' ) ) $query  .= ' OFFSET '   . $query_map->offset;
+
+		return $query;
 	}
 
-	public function read_items_query( $table = false, $params = array() ){
-		if( !$table ) throw new \Exception( 'Missing Table' );
-		$q = 'SELECT * FROM ' . esc_sql( $table );
+	public function insert_from_data( $query_map = array() ){
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Insert From Data Method' );
+		$query_map = (object)$query_map;
+		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Insert From Data Method' );
+		if( ! property_exists( $query_map, 'data' ) )  throw new \Exception( get_class() . ': No Data Provided for Insert From Data Method' );
 
-		$search = new Query_Search( $params );
-		$query_search = $search->get_query_search();
+		$query_map->data = (array)$query_map->data;
 
-		if( isset( $query_search->filters ) ) $q .= ' WHERE ' . implode( ' AND ', $query_search->filters );
-		if( isset( $query_search->order ) )   $q .= ' ORDER BY ' . implode( ', ', $query_search->order );
-		if( isset( $query_search->limit ) )   $q .= ' LIMIT ' . $query_search->limit;
-		if( isset( $query_search->offset ) )  $q .= ' OFFSET ' . $query_search->offset;
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
 
-		return $q;
+		$this->query = ( $query_map->update ) ? 'INSERT INTO ' . $query_map->table : 'INSERT IGNORE INTO ' . $query_map->table;
+
+		$this->data = [];
+		$this->keys = [];
+		if( $query_map->update ) $this->update = [];
+		array_walk( $query_map->data, function( &$data, $k ){
+			if( is_string( $data ) || is_numeric( $data ) ){
+				$data = $this->help->quote_it( $data );
+				return;
+			}
+
+			$data = (array)$data;
+			$this->keys = array_unique( array_merge( $this->keys, array_keys( $data ) ) );
+
+			array_walk( $data, function( &$d, $k ){ $d = $this->help->quote_it( esc_sql( $d ) ); });
+			$this->data[] = '(' . implode( ',', $data ) . ')';
+		});
+
+		if( empty( $this->keys ) || empty( $this->data ) ){
+			$this->keys = array_keys( $query_map->data );
+			$this->data[] = '(' . implode( ',', array_values( $query_map->data ) ) . ')';
+		}
+
+		// $this->keys = array_unique( $this->keys );
+		array_walk( $this->keys, function( &$k ){ $k = '`' . $k .'`'; });
+
+		$this->query .= ' (' . implode( ',', array_unique( $this->keys ) ) . ')';
+		$this->query .= ' VALUES ' . implode( ',', $this->data );
+
+		if( $query_map->update ){
+			array_walk( $this->keys, function( $k ){ $this->update[] = $k . ' = VALUES(' . $k . ')'; });
+			$this->query .= ' ON DUPLICATE KEY UPDATE ' . implode( ', ', $this->update );
+		}
+
+		return $this->query;
 	}
 
-	/**
-	 * dao_default_create_values
-	 *
-	 * @return Array
-	 */
-	private function default_table_columns(){
-		return array(
-			'`id` MEDIUMINT NOT NULL AUTO_INCREMENT',
-			'`created_on` datetime DEFAULT CURRENT_TIMESTAMP',
-			'`updated_on` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
-			'`user` MEDIUMINT NOT NULL'
-		);
+	public function insert_from_query( $query_map = array() ){
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Insert From Query Method' );
+		$query_map = (object)$query_map;
+		if( ! property_exists( $query_map, 'table' ) )   throw new \Exception( get_class() . ': No Table Provided for Insert From Query Method' );
+		if( ! property_exists( $query_map, 'keys' ) ) throw new \Exception( get_class() . ': No Keys Array Provided for Insert From Query Method' );
+		if( ! property_exists( $query_map, 'query' ) )   throw new \Exception( get_class() . ': No Select Query Map Provided for Insert From Query Method' );
+
+		$query_map->query = $this->select( $query_map->query );
+
+		array_walk( $query_map->keys, function( &$k ){ $c = '`' . $k . '`'; });
+
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
+
+		$this->query = ( $query_map->update ) ? 'INSERT INTO ' . $query_map->table : 'INSERT IGNORE INTO ' . $query_map->table;
+		$this->query .= ' ( ' . implode( ', ', $query_map->keys ) . ' )';
+		$this->query .= ' ' . $query_map->query;
+
+		if( $query_map->update ){
+			$this->update = [];
+			array_walk( $query_map->keys, function( $k ){ $this->update[] = $k . ' = VALUES( ' . $k . ' )'; });
+			$this->query .= ' ON DUPLICATE KEY UPDATE ' . implode( ', ', $this->update );
+		}
+		return $this->query;
 	}
 
-	// /**
-    //  * dao_default_add_values
-    //  *
-    //  * @return Array
-    //  */
-    // private function set_default_params(){
-    //     return array(
-    //         'user' => (int)get_current_user_id()
-    //     );
-    // }
+	public function update_from_data( $query_map = array() ){
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Update From Data Method' );
+		$query_map = (object)$query_map;
+		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Update From Data Method' );
 
-	private function get_current_user(){
-		$wu = new War_User;
-		$this->current_user = $wu->get_user();
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
+
+		$query_map->data = (array)$query_map->data;
+
+		$query = 'UPDATE ' . $query_map->table;
+
+		array_walk( $query_map->data, function( &$d, $key ){
+			$d = '`' . $key . '` = ' . $this->help->quote_it( esc_sql( $d ) );
+		});
+		$query .= ' SET ' . implode( ', ', $query_map->data );
+
+		if( property_exists( $query_map, 'where' ) )
+			$query .= ' WHERE ' . implode( ', AND ', $query_map->where );
+
+		return $query;
 	}
 
-}
+	public function update_from_query( $query_map = array() ){
+		// Example Update From Query Map
+		// $map = [
+		// 	'table'   => 'pet_table',
+		// 	'set' => [ 'owner' => 'owner' ],
+		// 	'on'    => [
+		// 		[ 'owner' => 'owner' ]
+		// 	],
+		// 	'query'   => [
+		// 		'select' => [ 'owner' ],
+		// 		'table'  => 'owner_table',
+		// 		'where'  => [ 'age >= 30' ]
+		// 	],
+		//  'where'   => [
+		//  	'owner = owner'
+		//	]
+		// ];
+
+
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Update From Query Method' );
+		$query_map = (object)$query_map;
+		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Update From Query Method' );
+		if( ! property_exists( $query_map, 'set' ) ) throw new \Exception( get_class() . ': No Set Array Provided for Update From Query Method' );
+		if( ! property_exists( $query_map, 'query' ) )   throw new \Exception( get_class() . ': No Select Query Map Provided for Update From Query Method' );
+		if( ! property_exists( $query_map, 'on' ) )   throw new \Exception( get_class() . ': No Join Map Provided for Update From Query Method' );
+
+		$query_map->query = $this->select( $query_map->query );
+
+		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
+
+		$this->query = 'UPDATE ' . $query_map->table . ' AS a INNER JOIN( ' . $query_map->query .' ) AS b';
+
+		array_walk( $query_map->on, function( &$b, $a ){ $b = 'a.' . $a . ' = b.' . $b; });
+		array_walk( $query_map->set, function( &$b, $a ){ $b = 'a.' . $a . ' = b.' . $b; });
+
+		$this->query .= ' ON( ' . implode( ', AND ', $query_map->on ) . ' )';
+		$this->query .= ' SET ' . implode( ',', $query_map->set );
+
+		return $this->query;
+	}
+
+	public function delete( $query_map = array() ){
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Delete Method' );
+		$query_map = (object)$query_map;
+		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Delete Method' );
+
+
+		$query  = 'DELETE FROM ' . $query_map->table;
+		$query .= ' WHERE ' . implode( ', AND ', $query_map->where );
+
+		return $query;
+	}
+
+	public function alter( $query_map = array() ){
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Alter Method' );
+		$query_map = (object)$query_map;
+
+		$query = 'ALTER TABLE ' . $query_map->table . ' ' . implode( ', ', $query_map->data );
+		return $query;
+	}
+
+	public function create_table( $query_map = array() ){
+		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Improper Query Map Provided for Create TAble Method' );
+		$query_map = (object)$query_map;
+
+		$query  = 'CREATE TABLE IF NOT EXISTS ' . $query_map->table;
+		$query .= ' (' . implode( ', ', $query_map->data );
+		if( property_exists( $query_map, 'primary' ) ) $query .= ', PRIMARY KEY(' . implode( ',', $query_map->primary ) . ')';
+		if( property_exists( $query_map, 'keys' ) )    $query .= ', KEY(' . implode( ',', $query_map->keys ) . ')';
+		$query .= ' )';
+
+		return $query;
+	}
+
+} // END Query_Builder Class

@@ -10,46 +10,64 @@ class Param_Helper {
 		$this->war_config = $war_config;
 	}
 
-	public function get_read_items_params(){
-		return [
+	public function get_read_records_params(){
+		$params = [
 			'filter' => 'array',
 			// 'group' => 'array',
 			'order' => 'array',
 			'limit' => [
 				'type' => 'integer',
-				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10
+				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10,
+				'sanitize_callback' => $this->sanitize_limit()
 			],
 			'page' => [
 				'type' => 'integer',
 				'default' => 1
 			],
-			'sideLoad' => 'bool',
+			'sideLoad' => [
+				'type' => 'string',
+				'default' => false,
+				'sanitize_callback' => $this->sanitize_side_load()
+			],
 			'sideSearch' => [
 				'type' => 'array',
-				// 'sanitize_callback' => [ $this, 'sanitize_side_search' ]
+				'sanitize_callback' => $this->sanitize_side_search()
 			],
-			'sideLimit' => [
-				'type' => 'integer',
-				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10
-			]
-		];
-	}
-
-	public function get_read_item_params(){
-		return [
-			'sideLoad' => [
+			'_info' => [
 				'type' => 'bool',
 				'default' => true
+			]
+		];
+
+		if( property_exists( $this->war_config, 'sideLimit' ) && $this->war_config->sideLimit !== false )
+			$params[ 'sideLimit' ] = [
+				'type' => 'integer',
+				'default' => $this->war_config->sideLimit
+			];
+
+		return $params;
+	}
+
+	public function get_read_record_params(){
+		$params = [
+			'sideLoad' => [
+				'type' => 'string',
+				'default' => true,
+				'sanitize_callback' => $this->sanitize_side_load()
 			],
 			'sideSearch' => [
 				'type' => 'array',
-				// 'sanitize_callback' => [ $this, 'sanitize_side_search' ]
-			],
-			'sideLimit' => [
-				'type' => 'integer',
-				'default' => ( isset( $this->war_config->limit ) ) ? $this->war_config->limit : 10
+				'sanitize_callback' => $this->sanitize_side_search()
 			]
 		];
+
+		if( property_exists( $this->war_config, 'sideLimit' ) && $this->war_config->sideLimit !== false )
+			$params[ 'sideLimit' ] = [
+				'type' => 'integer',
+				'default' => $this->war_config->sideLimit
+			];
+
+		return $params;
 	}
 
 	public function get_request_args( $request = [] ){
@@ -87,6 +105,10 @@ class Param_Helper {
             if( $val[ 'type' ] == 'array' ){
                 $x[ $key ][ 'sanitize_callback' ] = $this->sanitize_array();
             }
+
+			if( $val[ 'type' ] == 'json' ){
+				$x[ $key ][ 'sanitize_callback' ] = $this->sanitize_json();
+			}
 
             $x[ $key ] = array_merge( $x[ $key ], $val );
         }
@@ -126,10 +148,10 @@ class Param_Helper {
                 };
                 break;
 			case 'date_time':
-			return function($a){
-				$match = preg_match('/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/',$a);
-				return ($match === 1) ? true : false;
-			};
+				return function($a){
+					$match = preg_match('/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/',$a);
+					return ($match === 1) ? true : false;
+				};
 			break;
             case 'array':
                 return function($a){ return ( is_array($a) || ( is_string( $a ) && preg_match( '/^[^,]+,?/', $a ) ) ); }; //If is string, then it needs to be a CSL
@@ -143,13 +165,21 @@ class Param_Helper {
             case 'email':
                 return function($a){ $email = filter_var($a, FILTER_SANITIZE_EMAIL); return (filter_var($email, FILTER_VALIDATE_EMAIL) !== false); };
                 break;
+			case 'json':
+				return function($a){
+					if( is_array( $a ) ) $a = json_encode( $a );
+					$a = json_decode( $a );
+					return ( json_last_error() == JSON_ERROR_NONE );
+				};
+				break;
         }
         return function($a){ return true; };
     }
 
     public function sanitize_global(){
         return function( $a ){
-            return ( is_numeric( $a ) ) ? floatval( $a ) : $a;
+			$a = trim($a);
+            return ( is_numeric( $a ) ) ? floatval( $a ) : (string)$a;
         };
     }
 
@@ -157,12 +187,31 @@ class Param_Helper {
         return function($a){ if($a === true || $a == 'true' || $a == 1){ return true; }else{ return false; } };
     }
 
+	public function sanitize_limit(){
+		return function( $l ){ return ( (int)$l > 100 ) ? 100 : (int)$l; };
+	}
+
+	public function sanitize_side_load(){
+		return function( $a ){
+			if( is_bool( $a ) ) return $a;
+			if( $a == 'true' || $a === (int)1 ) return true;
+			if( $a == 'false' || $a === (int)0 ) return false;
+			return (string)$a;
+		};
+	}
+
+	public function sanitize_json(){
+		return function( $a ){
+			return $a;
+		};
+	}
+
     public function sanitize_array(){
         return function( $a ){
             if( is_string( $a ) ) $a = explode( ',', $a );
             array_walk( $a, function( &$v ){
                 $v = trim( $v );
-                $v = ( is_numeric( $v ) ) ? floatval( $v ) : $v;
+                $v = ( is_numeric( $v ) ) ? floatval( $v ) : (string) $v;
             } );
             return $a;
         };
@@ -174,9 +223,10 @@ class Param_Helper {
 			array_walk( $a, function( &$v ){
 				$v  = trim( $v );
 				$v = explode( ':', $v );
-				array_walk( $v, function( &$x ){ $x = ( is_numeric( $x ) ) ? floatval( $x ) : $x; } );
+				array_walk( $v, function( &$x ){ $x = ( is_numeric( $x ) ) ? floatval( $x ) : (string)$x; } );
+				$v = implode( ':', $v );
 			} );
-			return $v;
+			return $a;
 		};
 	}
 }

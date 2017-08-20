@@ -17,7 +17,8 @@ class Global_Helpers {
         return $old_prefix;
 	}
 
-	public function war_encrypt( $string ){
+	public function war_encrypt( $string = false ){
+		if( ! $string ) return $string;
         $iv_size = mcrypt_get_iv_size( MCRYPT_RIJNDAEL_256, MCRYPT_MODE_CFB );
         $iv = mcrypt_create_iv( $iv_size, MCRYPT_RAND) ;
         $key = hash( 'sha256', SECURE_AUTH_KEY, true );
@@ -26,13 +27,14 @@ class Global_Helpers {
         return base64_encode( $com );
     }
 
-    public function war_decrypt( $string ){
+    public function war_decrypt( $string = false ){
         if(! $string) return true;
         $iv_size = mcrypt_get_iv_size( MCRYPT_RIJNDAEL_256, MCRYPT_MODE_CFB );
         $debase = base64_decode( $string );
         $iv = substr( $debase, 0, $iv_size );
         $val = substr( $debase, $iv_size );
-        $dc = mcrypt_decrypt( MCRYPT_RIJNDAEL_256, hash( 'sha256', SECURE_AUTH_KEY, true ), $val, MCRYPT_MODE_CFB, $iv );
+		$key = hash( 'sha256', SECURE_AUTH_KEY, true );
+        $dc = mcrypt_decrypt( MCRYPT_RIJNDAEL_256, $key, $val, MCRYPT_MODE_CFB, $iv );
         return ( $dc ) ? $dc : $val;
     }
 
@@ -51,16 +53,31 @@ class Global_Helpers {
             if( is_array( $row ) || is_object( $row ) ){
                 $row = $this->numberfy( $row );
             }else{
-                if( is_numeric( $row ) ) $row = (int) $row;
-            }
+				if( is_numeric( $row ) ) $row = (float) $row;
+			}
         }
         return $array;
     }
 
+	public function flatten_cs_list( $array = '' ){
+		if( ! is_array( $array ) && ! strpos( $array, ',' ) ){
+			$item = ( is_numeric( $array ) ) ? [ (int)$array ] : [ (string)$array ];
+			if( sizeof( $item ) > 0 ) return $item;
+		}
+
+		if( ! is_array( $array ) && strpos( $array, ',' ) ) $array = explode( ',', $array );
+
+		$result = [];
+		foreach( $array as $value ){
+			$result = array_merge( $result, $this->flatten_cs_list( $value ) );
+		}
+		return $result;
+	}
+
 	public function sql_data_type( $type = 'string' ){
 		switch ( $type ){
 			case 'string':
-				return 'VARCHAR(50)';
+				return 'VARCHAR(150)';
 				break;
 			case 'email':
 				return 'VARCHAR(150)';
@@ -71,18 +88,30 @@ class Global_Helpers {
 			case 'integer':
 				return 'BIGINT';
 				break;
-			case 'model':
-				return 'MEDIUMINT';
-				break;
-			case 'assoc':
-				return 'MEDIUMINT';
+			case 'float':
+				return 'FLOAT(10,5)';
 				break;
 			case 'date':
 				return 'DATETIME';
+				break;
+			case 'bool':
+				return 'TINYINT';
+				break;
+			case 'array':
+				return 'VARCHAR(550)';
 				break;
 			default:
 				return 'VARCHAR(150)';
 				break;
 		}
+	}
+
+	public function get_table_name( $db = array(), $model = array(), $war_config = array() ){
+		if( empty( $db ) || empty( $model ) || empty( $war_config ) ) return false;
+
+		$table = $db->prefix;
+		$table .= ( isset( $model->table_prefix ) ) ? $model->table_prefix : $war_config->api_name . '_';
+		$table .= $model->name;
+		return $table;
 	}
 }

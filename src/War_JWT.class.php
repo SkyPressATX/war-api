@@ -40,7 +40,11 @@ class War_JWT {
         if(!$token) return false;
 
         $decoded_token = JWT::decode($token, AUTH_KEY, array('HS256'));
-        return $this->jwt_validate((object)$decoded_token);
+		try {
+        	return $this->jwt_validate((object)$decoded_token);
+		}catch( \Exception $e ){
+			throw $e;
+		}
     }
 
 	private function jwt_validate( $decoded_token ){
