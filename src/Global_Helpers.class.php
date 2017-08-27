@@ -33,7 +33,7 @@ class Global_Helpers {
         $debase = base64_decode( $string );
         $iv = substr( $debase, 0, $iv_size );
         $val = substr( $debase, $iv_size );
-		$key = hash( 'sha256', SECURE_AUTH_KEY, true );
+				$key = hash( 'sha256', SECURE_AUTH_KEY, true );
         $dc = mcrypt_decrypt( MCRYPT_RIJNDAEL_256, $key, $val, MCRYPT_MODE_CFB, $iv );
         return ( $dc ) ? $dc : $val;
     }

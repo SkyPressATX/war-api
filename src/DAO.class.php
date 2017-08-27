@@ -141,7 +141,8 @@ class DAO {
 			$this->unset_empty_values();
 			$this->create_table();
 			$this->adjust_table_columns();
-			$this->params->user = $this->request->current_user->id;
+			if( property_exists( $this->request->current_user, 'id' ) )
+				$this->params->user = $this->request->current_user->id;
 			$insert_map = [
 				'table' => $this->table,
 				'data'  => $this->params
@@ -284,6 +285,10 @@ class DAO {
 		if( property_exists( $this->war_config, 'table_prefix' ) ) return $this->war_config->table_prefix;
 		//Use WordPress $table_prefix as a last resort
 		global $table_prefix;
+		//See if we should append the api_name to our table for easier navigation
+		if( property_exists( $this->war_config, 'api_name' ) && $this->war_config->api_name != 'wp-json' )
+			return $table_prefix . $this->war_config->api_name . '_';
+		//Return what is set in wp-confg.php
 		return $table_prefix;
 	}
 

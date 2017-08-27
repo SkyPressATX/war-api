@@ -10,6 +10,7 @@ class Query_Builder {
 	private $query_search;
 	private $query;
 	private $help;
+	private $data;
 
 	public function __construct(){
 		$this->query_search = new Query_Search;
@@ -59,7 +60,7 @@ class Query_Builder {
 				if( ! property_exists( $join, 'type' ) ) throw new \Exception( get_class() . ': No Join "Type" provided in Select Method' );
 				if( property_exists( $join, 'query' ) ){
 					if( ! property_exists( $join, 'as' ) ) throw new \Exception( get_class() . ': No "As" provided for Join Map in Select Method' );
-					$j = '( ' . $this->select( $join->query ) . ' )';
+					$j = '( ' . $this->select( $join->query ) . ' ) AS `' . $join->as . '`';
 				}
 				if( property_exists( $join, 'table' ) ){
 					if( ! is_array( $join->table ) ) throw new \Exception( get_clasS() . ': Table provided in Join Map but is Not an Array in Select Method' );
@@ -94,21 +95,24 @@ class Query_Builder {
 		if( ! property_exists( $query_map, 'table' ) ) throw new \Exception( get_class() . ': No Table Provided for Insert From Data Method' );
 		if( ! property_exists( $query_map, 'data' ) )  throw new \Exception( get_class() . ': No Data Provided for Insert From Data Method' );
 
-		$query_map->data = (array)$query_map->data;
-
-		if( is_array( $query_map->table ) ) $query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
+		if( is_array( $query_map->table ) )
+			$query_map->table = $table = array_values( $query_map->table )[0] . ' AS `' . array_keys( $query_map->table )[0] . '`';
 
 		$this->query = ( $query_map->update ) ? 'INSERT INTO ' . $query_map->table : 'INSERT IGNORE INTO ' . $query_map->table;
 
 		$this->data = [];
 		$this->keys = [];
 		if( $query_map->update ) $this->update = [];
+
+		$query_map->data = (array)$query_map->data;
 		array_walk( $query_map->data, function( &$data, $k ){
+			//If this isn't an array of arrays (IE: multi-item inserts) then lets quote it and leave
 			if( is_string( $data ) || is_numeric( $data ) ){
 				$data = $this->help->quote_it( $data );
 				return;
 			}
 
+			//If this IS an array of arrays, we've got to loop through it again
 			$data = (array)$data;
 			$this->keys = array_unique( array_merge( $this->keys, array_keys( $data ) ) );
 
@@ -118,7 +122,7 @@ class Query_Builder {
 
 		if( empty( $this->keys ) || empty( $this->data ) ){
 			$this->keys = array_keys( $query_map->data );
-			$this->data[] = '(' . implode( ',', array_values( $query_map->data ) ) . ')';
+			$this->data = [ '(' . implode( ',', array_values( $query_map->data ) ) . ')' ];
 		}
 
 		// $this->keys = array_unique( $this->keys );
@@ -218,7 +222,7 @@ class Query_Builder {
 		array_walk( $query_map->set, function( &$b, $a ){ $b = 'a.' . $a . ' = b.' . $b; });
 
 		$this->query .= ' ON( ' . implode( ', AND ', $query_map->on ) . ' )';
-		$this->query .= ' SET ' . implode( ',', $query_map->set );
+		$this->query .= ' SET ' . implode( ', ', $query_map->set );
 
 		return $this->query;
 	}
@@ -249,8 +253,10 @@ class Query_Builder {
 
 		$query  = 'CREATE TABLE IF NOT EXISTS ' . $query_map->table;
 		$query .= ' (' . implode( ', ', $query_map->data );
-		if( property_exists( $query_map, 'primary' ) ) $query .= ', PRIMARY KEY(' . implode( ',', $query_map->primary ) . ')';
-		if( property_exists( $query_map, 'keys' ) )    $query .= ', KEY(' . implode( ',', $query_map->keys ) . ')';
+		if( property_exists( $query_map, 'primary' ) && ! empty( $query_map->primary ) )
+			$query .= ', PRIMARY KEY(' . implode( ',', $query_map->primary ) . ')';
+		if( property_exists( $query_map, 'keys' ) && ! empty( $query_map->keys ) )
+			$query .= ', KEY(' . implode( ',', $query_map->keys ) . ')';
 		$query .= ' )';
 
 		return $query;
