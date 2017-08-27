@@ -28,6 +28,7 @@ class War_Model {
     public function register(){
 		$this->set_model_filters();
 		$this->get_access_levels();
+		if( ! property_exists( $this->model, 'callback' ) ) $this->model->callback = (object)[];
 		$this->model_endpoints = $this->create_model_endpoints();
 
 		array_walk( $this->model_endpoints, function( $end ){
