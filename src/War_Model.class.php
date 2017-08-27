@@ -42,35 +42,35 @@ class War_Model {
 			'read_records' => [
 				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ),
 				'method'	=> \WP_REST_Server::READABLE,
-				'callback' 	=> ( isset( $this->method->callback->read_items ) ) ? $this->method->callback->read_items : [ $this, 'read_records' ],
+				'callback' 	=> ( property_exists( $this->model->callback, 'read_items' ) ) ? $this->model->callback->read_items : [ $this, 'read_records' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
 				'params'	=> $this->param_helper->get_read_records_params()
 			],
 			'create_record' => [
 				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ),
 				'method' 	=> \WP_REST_Server::CREATABLE,
-				'callback' 	=> ( isset( $this->method->callback->create_item ) ) ? $this->method->callback->create_item : [ $this, 'create_record' ],
+				'callback' 	=> ( property_exists( $this->model->callback, 'create_item' ) ) ? $this->model->callback->create_item : [ $this, 'create_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->create : $this->model->access,
 				'params'	=> $this->model->params
 			],
 			'read_record' => [
 				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
 				'method'	=> \WP_REST_Server::READABLE,
-				'callback'  => ( isset( $this->method->callback->read_item ) ) ? $this->method->callback->read_item : [ $this, 'read_record' ],
+				'callback'  => ( property_exists( $this->model->callback, 'read_item' ) ) ? $this->model->callback->read_item : [ $this, 'read_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
 				'params'	=> $this->param_helper->get_read_record_params()
 			],
 			'edit_record' => [
 				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
 				'method'    => \WP_REST_Server::EDITABLE,
-				'callback'  => ( isset( $this->method->callback->update_item ) ) ? $this->method->callback->update_item : [ $this, 'update_record' ],
+				'callback'  => ( property_exists( $this->model->callback, 'update_item' ) ) ? $this->model->callback->update_item : [ $this, 'update_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->update : $this->model->access,
 				'params'	=> $this->strip_required_and_default( $this->model->params )
 			],
 			'delete_record' => [
 				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
 				'method'    => \WP_REST_Server::DELETABLE,
-				'callback'  => ( isset( $this->method->callback->delete_item ) ) ? $this->method->callback->delete_item : [ $this, 'delete_record' ],
+				'callback'  => ( property_exists( $this->model->callback, 'delete_item' ) ) ? $this->model->callback->delete_item : [ $this, 'delete_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->delete : $this->model->access
 			]
 		];
