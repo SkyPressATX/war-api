@@ -181,7 +181,7 @@ class Query_Builder {
 		$query .= ' SET ' . implode( ', ', $query_map->data );
 
 		if( property_exists( $query_map, 'where' ) )
-			$query .= ' WHERE ' . implode( ', AND ', $query_map->where );
+			$query .= ' WHERE ' . implode( ' AND ', $query_map->where );
 
 		return $query;
 	}
