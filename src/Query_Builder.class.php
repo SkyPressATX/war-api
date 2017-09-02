@@ -234,7 +234,7 @@ class Query_Builder {
 
 
 		$query  = 'DELETE FROM ' . $query_map->table;
-		$query .= ' WHERE ' . implode( ', AND ', $query_map->where );
+		$query .= ' WHERE ' . implode( ' AND ', $query_map->where );
 
 		return $query;
 	}
