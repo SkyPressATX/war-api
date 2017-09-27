@@ -25,6 +25,7 @@ class DAO {
 	private $war_config;
 	private $table_prefix;
 	private $query_map;
+	private $url_id_param;
 
 	public function __construct( $db_info = array(), $model = array(), $request = array(), $war_config = array() ){
 		try {
@@ -40,6 +41,7 @@ class DAO {
 		$this->isolate = $this->determine_isolation();
 		$this->table_prefix = $this->get_table_prefix( $db_info );
 		$this->table = esc_sql( $this->table_prefix . $this->model->name );
+		$this->url_id_param = $this->get_url_id_param();
 
 		$this->query_search = new Query_Search;
 		$this->help = new Global_Helpers;
@@ -63,7 +65,7 @@ class DAO {
 			//Build war_db select_all() params
 			$this->query_map[ 'query' ] = [
 				'select' => ( property_exists( $this->params, 'select' ) ) ? $this->params->select : [],
-				'table'   => $this->table,
+				'table'  => $this->table,
 				'where'  => $this->query_search->parse_filters( $this->params->filter, $this->table ),
 				'limit'  => $this->query_search->parse_limit( $this->params->limit ),
 				// 'order'  => $this->query_search->parse_order( $this->params->order, $table ),
@@ -72,23 +74,24 @@ class DAO {
 			if( property_exists( $this->params, 'order' ) ) $this->query_map[ 'query' ][ 'order' ] = $this->query_search->parse_order( $this->params->order, $this->table );
 
 			// Lets look for any assoc queries that have a where statement. Pull that data first
-			foreach( $this->query_map[ 'assoc' ] as $model => &$assoc ){
-				if( ! empty( $assoc[ 'query' ][ 'where' ] ) ){
-					$assoc_where = $this->query_assoc->get_side_search_filter( $assoc, $model, $this->table );
-					if( $assoc_where ){
-						if( ! empty( $assoc_where[ 'data' ] ) ) $assoc[ 'data' ] = $assoc_where[ 'data' ];
-						$this->query_map[ 'query' ][ 'where' ][] = $assoc_where[ 'filter' ];
+			if( isset( $this->query_map[ 'assoc' ] ) ){
+				foreach( $this->query_map[ 'assoc' ] as $model => &$assoc ){
+					if( ! empty( $assoc[ 'query' ][ 'where' ] ) ){
+						$assoc_where = $this->query_assoc->get_side_search_filter( $assoc, $model, $this->table );
+						if( $assoc_where ){
+							if( ! empty( $assoc_where[ 'data' ] ) ) $assoc[ 'data' ] = $assoc_where[ 'data' ];
+							$this->query_map[ 'query' ][ 'where' ][] = $assoc_where[ 'filter' ];
 
+						}
 					}
 				}
 			}
 
 			$total = $this->query_map[ 'query' ];
-			$total[ 'select' ] = 'COUNT(' . $this->table . '.id)';
+			$total[ 'select' ] = 'COUNT(' . $this->table . '.' . $this->url_id_param . ')';
 			unset( $total[ 'limit' ] );
 			unset( $total[ 'offset' ] );
 
-			// print_r( $this->query_map );
 			$data = $this->war_db->select_all( $this->query_map[ 'query' ] );
 
 			//Append our Associated Data
@@ -122,11 +125,12 @@ class DAO {
 
 	public function read_one(){
 		try {
+			$id = $this->url_id_param;
 			$this->params->_info = false;
-			$this->params->filter = [ 'id:eq:' . $this->params->id ];
+			$this->params->filter = [ $id . ':eq:' . $this->params->$id ];
 			$this->params->limit = 1;
 			$this->params->page = 1;
-			unset( $this->params->id );
+			unset( $this->params->$id );
 
 			$item = $this->read_all();
 
@@ -160,11 +164,13 @@ class DAO {
 			$this->add_current_user_to_filter();
 			$this->adjust_table_columns();
 
+			$id = $this->url_id_param;
+
 			if( ! property_exists( $this->params, 'filter' ) ) $this->params->filter = [];
-			$this->params->filter[] = 'id:eq:' . $this->params->id;
+			$this->params->filter[] = $id .':eq:' . $this->params->$id;
 
 			$data = (object)(array)$this->params;
-			if( property_exists( $data, 'id' ) ) unset( $data->id );
+			if( property_exists( $data, $id ) ) unset( $data->$id );
 			if( property_exists( $data, 'filter' ) ) unset( $data->filter );
 
 			$update_map = [
@@ -182,9 +188,10 @@ class DAO {
 	public function delete_one(){
 		try {
 			$this->add_current_user_to_filter();
+			$id = $this->url_id_param;
 
 			if( ! property_exists( $this->params, 'filter' ) ) $this->params->filter = [];
-			$this->params->filter[] = 'id:eq:' . $this->params->id;
+			$this->params->filter[] = $id . ':eq:' . $this->params->$id;
 
 			$delete_map = [
 				'table' => $this->table,
@@ -279,6 +286,8 @@ class DAO {
 	}
 
 	private function get_table_prefix( $db_info = array() ){
+		//Use $this->model->table_prefix if set
+		if( property_exists( $this->model, 'table_prefix' ) ) return $this->model->table_prefix;
 		//Use $db_info[ 'table_prefix' ] if set
 		if( ! empty( $db_info ) && isset( $db_info[ 'table_prefix' ] ) ) return $db_info[ 'table_prefix' ];
 		//Use $this->war_config->table_prefix if set
@@ -290,6 +299,12 @@ class DAO {
 			return $table_prefix . $this->war_config->api_name . '_';
 		//Return what is set in wp-confg.php
 		return $table_prefix;
+	}
+
+	private function get_url_id_param(){
+		$url_id_param = ( property_exists( $this->model, 'url_id_param' ) ) ? $this->model->url_id_param : $this->war_config->url_id_param;
+		if( ! is_array( $url_id_param ) || sizeof( $url_id_param ) !== 2 ) throw new \Exception( 'URL ID Param not properly configured' );
+		return $url_id_param[0];
 	}
 
 	/**

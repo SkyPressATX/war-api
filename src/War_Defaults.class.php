@@ -29,7 +29,9 @@ class War_Defaults {
 			'isolate_user_data' => true,
 			'limit' => 10,
 			'sideLimit' => 10,
-			'filter_sideSearch_results' => false
+			'filter_sideSearch_results' => false,
+			'max_limit' => 100,
+			'url_id_param' => [ 'id', '\d+' ]
         ];
 	}
 

@@ -229,4 +229,10 @@ class Param_Helper {
 			return $a;
 		};
 	}
+
+	public function parse_url_id_param( $url_id_param = array() ){
+		if( empty( $url_id_param ) ) throw new \Exception( 'No URL ID Param Set' );
+		if( sizeof( $url_id_param ) !== 2 ) throw new \Exception( 'URL ID Param not properly configured' );
+		return '(?P<' . $url_id_param[0] . '>' . $url_id_param[1] . ')';
+	}
 }

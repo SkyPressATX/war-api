@@ -43,6 +43,7 @@ class Global_Helpers {
     }
 
 	public function quote_it( $x ){
+		if( empty( $x ) ) return 'NULL';
 		if( is_numeric( $x ) ) return $x;
 		return '"' . $x . '"';
 	}
