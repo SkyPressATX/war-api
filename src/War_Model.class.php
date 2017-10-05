@@ -16,6 +16,7 @@ class War_Model {
 	private $war_config;
 	private $param_helper;
 	private $db;
+	private $url_id_param;
 
 	public function __construct( $model = array(), $war_config = array(), $current_user = array() ){
 		$this->model = (object)$model;
@@ -28,11 +29,13 @@ class War_Model {
     public function register(){
 		$this->set_model_filters();
 		$this->get_access_levels();
+		$this->get_url_id_param();
 		if( ! property_exists( $this->model, 'callback' ) ) $this->model->callback = [];
 		$this->model->callback = (object)$this->model->callback;
 		$this->model_endpoints = $this->create_model_endpoints();
 
 		array_walk( $this->model_endpoints, function( $end ){
+			if( $end[ 'callback' ] === FALSE ) return;
 			$war_end = new War_Endpoint( $end, $this->war_config, $this->current_user );
 			$war_end->register();
 		});
@@ -56,21 +59,21 @@ class War_Model {
 				'params'	=> $this->model->params
 			],
 			'read_record' => [
-				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/' . $this->url_id_param,
 				'method'	=> \WP_REST_Server::READABLE,
 				'callback'  => ( property_exists( $this->model->callback, 'read_item' ) ) ? $this->model->callback->read_item : [ $this, 'read_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->read : $this->model->access,
 				'params'	=> $this->param_helper->get_read_record_params()
 			],
 			'edit_record' => [
-				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/' . $this->url_id_param,
 				'method'    => \WP_REST_Server::EDITABLE,
 				'callback'  => ( property_exists( $this->model->callback, 'update_item' ) ) ? $this->model->callback->update_item : [ $this, 'update_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->update : $this->model->access,
 				'params'	=> $this->strip_required_and_default( $this->model->params )
 			],
 			'delete_record' => [
-				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/(?P<id>\d+)',
+				'uri' 		=> '/' . preg_replace( '/_/', '-', $this->model->name ) . '/' . $this->url_id_param,
 				'method'    => \WP_REST_Server::DELETABLE,
 				'callback'  => ( property_exists( $this->model->callback, 'delete_item' ) ) ? $this->model->callback->delete_item : [ $this, 'delete_record' ],
 				'access' 	=> ( isset( $this->access_levels ) ) ? $this->access_levels->delete : $this->model->access
@@ -147,7 +150,7 @@ class War_Model {
 
 	public function delete_record( $request ){
 		try {
-			if( ! property_exists( $request->params, 'id' ) ) throw new \Exception( 'No Record ID Provided' );
+			// if( ! property_exists( $request->params, 'id' ) ) throw new \Exception( 'No Record ID Provided' );
 			$request = apply_filters( 'war_pre_data_' . $this->model->name, $request );
 			$db_info = ( property_exists( $this->model, 'db_info' ) ) ? $this->model->db_info : array();
 
@@ -158,12 +161,18 @@ class War_Model {
 		}
 	}
 
+	private function get_url_id_param(){
+		$this->url_id_param = ( property_exists( $this->model, 'url_id_param' ) ) ? $this->model->url_id_param : $this->war_config->url_id_param;
+		$this->url_id_param = $this->param_helper->parse_url_id_param( $this->url_id_param );
+	}
+
 	private function set_model_filters(){
 		if( isset( $this->model->pre_data ) ) add_filter( 'war_pre_data_' . $this->model->name, $this->model->pre_data, 15 );
 		if( isset( $this->model->pre_return ) ) add_filter( 'war_pre_return_' . $this->model->name, $this->model->pre_return, 15 );
 	}
 
-	private function strip_required_and_default( $params ){
+	private function strip_required_and_default( $params = array() ){
+		if( empty( $params ) ) return $params;
 		array_walk( $params, function( &$v, $k ){
 			if( is_array( $v ) ){
 				if( isset( $v[ 'required' ] ) ) unset( $v[ 'required' ] );
