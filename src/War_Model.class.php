@@ -177,6 +177,7 @@ class War_Model {
 	}
 
 	private function get_access_levels(){
+		if( ! property_exists( $this->model, 'access' ) ) $this->model->access = $this->war_config->default_access; // Make sure the war_config default gets set if nothing else is
 		if( is_bool( $this->model->access ) || $this->model->access === NULL ) return;
 		if( is_string( $this->model->access ) ){ // Set all Perm Levels to String Value
 			return (object) [

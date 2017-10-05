@@ -233,7 +233,7 @@ class War_DB {
 		if( ! property_exists( $this, 'db_info' ) ) throw new \Exception( get_class() . ': No DB Information Provided for Connect To MySQL Method' );
 
 		$db_info = (object)$this->db_info;
-		if( ! property_exists( $db_info, 'db_port' ) ) $db_info->db_port = 33306; //Default mysql port
+		if( ! property_exists( $db_info, 'db_port' ) ) $db_info->db_port = NULL; //Default mysql port
 
 		$db = mysqli_init();
 		$db->options( MYSQLI_OPT_INT_AND_FLOAT_NATIVE, 1 );
