@@ -39,7 +39,7 @@ class Query_Search {
 
 				if( ! isset( $result[ $model ] ) ) $result[ $model ] = array();
 				$table = $prefix . $model;
-				$result[ $model ][] = $this->build_filter_query( $f, $table );
+				$result[ $model ][] = $this->build_filter_query( $f, $model );
 			}
 		};
 
@@ -83,6 +83,7 @@ class Query_Search {
 	 **/
 	public function parse_order( $orders = array(), $model = '' ){
 		if( empty( $orders ) ) return $orders;
+		if( ! is_array( $orders ) && is_string( $orders ) ) $orders = [ $orders ];
 		array_walk( $orders, function( &$order, $i, $model ){
 			$order = $this->build_order_query( trim( $order ), $model );
 		}, $model );

@@ -72,7 +72,7 @@ class Query_Assoc {
 		//If $assoc type is mm
 		if( $assoc[ 'map' ][ 'assoc' ] == 'mm' ){
 			//Get the list of items to match
-			$result[ 'data' ] = $this->war_db->select_all( $assoc[ 'query' ] );
+			$result[ 'data' ] = $this->war_db->select_all( $assoc[ 'query' ], false );
 			//Build a new where statement for the main query
 			// $where_list = $this->help->flatten_cs_list( array_column( $result[ 'data' ], $assoc[ 'map' ][ 'match' ] ) );
 			$this->where_list = [];
@@ -107,15 +107,15 @@ class Query_Assoc {
 				if( empty( $match ) ) return; // Leave if nothing is found
 
 				if( $assoc->map->assoc == 'mm' ){
-					$assoc->query->where[] = 'CONCAT( ",", ' . $assoc->map->table . '.' . $assoc->map->match . ', "," ) REGEXP ",(' . implode( '|', $match ) . '),"';
+					$assoc->query->where[] = 'CONCAT( ",", ' . $model . '.' . $assoc->map->match . ', "," ) REGEXP ",(' . implode( '|', $match ) . '),"';
 				}else{
 					array_walk( $match, function( &$i){
 						$i = $this->help->quote_it( $i );
 					});
-					$assoc->query->where[] = $assoc->map->table  . '.' . $assoc->map->match . ' IN (' . implode( ',', $match ) . ')';
+					$assoc->query->where[] = $model  . '.' . $assoc->map->match . ' IN (' . implode( ',', $match ) . ')';
 				}
 
-				$assoc->data = $this->war_db->select_all( $assoc->query );
+				$assoc->data = $this->war_db->select_all( $assoc->query, false );
 			}
 
 			if( empty( $assoc->data ) ) return;
@@ -144,9 +144,10 @@ class Query_Assoc {
 	private function build_query_map( $model = false, $assoc = array() ){
 		if( empty( $assoc ) || ! $model ) return array();
 		$table = $this->table_prefix . $model;
+		if( isset( $assoc[ 'db_name' ] ) ) $table = $assoc[ 'db_name' ] . '.' . $table;
 		$query = [
 			'select' => [],
-			'table'   => $table,
+			'table'   => [ $model => $table ],
 			'where'  => ( isset( $this->side_search[ $model ] ) ) ? $this->side_search[ $model ] : []
 		];
 

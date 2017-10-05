@@ -104,11 +104,11 @@ class War_DB {
 		return $this->db_call( $query )->fetch_row();
 	}
 
-	public function select_all( $query_map = array() ){
+	public function select_all( $query_map = array(), $table_check = true ){
 		if( empty( $query_map ) ) throw new \Exception( get_class() . ': Missing a Proper Query Map for Select All Method' );
 		$query_map = (object)$query_map;
 		//Check My Table
-		$this->table_check( $query_map->table );
+		if( $table_check ) $this->table_check( $query_map->table );
 		//Build me a Select Query!
 		$query = $this->query_builder->select( $query_map );
 		//Call initial results
@@ -116,6 +116,7 @@ class War_DB {
 		//Return all the results
 		$result = $db_call->fetch_all( MYSQLI_ASSOC );
 		$db_call->free();
+		return $this->help->numberfy( $result );
 		return $result;
 	}
 
