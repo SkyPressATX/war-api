@@ -143,7 +143,7 @@ class Query_Assoc {
 
 	private function build_query_map( $model = false, $assoc = array() ){
 		if( empty( $assoc ) || ! $model ) return array();
-		$table = $this->table_prefix . $model;
+		$table = ( isset( $assoc[ 'prefix' ] ) ) ? $assoc[ 'prefix' ] . $model : $this->table_prefix . $model;
 		if( isset( $assoc[ 'db_name' ] ) ) $table = $assoc[ 'db_name' ] . '.' . $table;
 		$query = [
 			'select' => [],

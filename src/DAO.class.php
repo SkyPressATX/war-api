@@ -45,7 +45,8 @@ class DAO {
 
 		$this->query_search = new Query_Search;
 		$this->help = new Global_Helpers;
-		$this->query_assoc = new Query_Assoc( $this->model->assoc, $this->params, $this->table_prefix );
+		if( property_exists( $this->model, 'assoc' ) )
+			$this->query_assoc = new Query_Assoc( $this->model->assoc, $this->params, $this->table_prefix );
 
 	}
 
@@ -147,6 +148,12 @@ class DAO {
 			$this->adjust_table_columns();
 			if( property_exists( $this->request->current_user, 'id' ) )
 				$this->params->user = $this->request->current_user->id;
+
+			// Implode any arrays in the params
+			array_walk( $this->params, function( &$p ){
+				if( is_array( $p ) ) $p = implode( ',', $p );
+			});
+
 			$insert_map = [
 				'table' => $this->table,
 				'data'  => $this->params
