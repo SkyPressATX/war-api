@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WAR API
-Description:  WAR API
+Description:  WAR API Dev Framework
 Version: 0.1.9.7
 Author: BMO
 License: MIT
