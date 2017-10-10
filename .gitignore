@@ -1,17 +1,53 @@
 *~
-# Ignore Common Files
-*~
 .DS_Store
 .svn
 .cvs
 *.bak
 *.swp
 Thumbs.db
+*.py
 
-# NO VAGRANT FILES
+# large/disallowed file types
+# a CDN should be used for these
+*.hqx
+*.bin
+*.exe
+*.dll
+*.deb
+*.dmg
+*.iso
+*.img
+*.msi
+*.msp
+*.msm
+*.mid
+*.midi
+*.kar
+*.mp3
+*.ogg
+*.m4a
+*.ra
+*.3gpp
+*.3gp
+*.mp4
+*.mpeg
+*.mpg
+*.mov
+*.webm
+*.flv
+*.m4v
+*.mng
+*.asx
+*.asf
+*.wmv
+*.avi
+
+# NO VAGRANT
 *.box
-.vagrant
-.vagrant/*
+*.vagrant
+*.vagrant/*
 Vagrantfile
 
-
+# NO GIT
+*.git*
+*.git/*
