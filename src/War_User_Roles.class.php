@@ -35,7 +35,8 @@ class War_User_Roles {
 	 * @return Array | Old Roles
 	 **/
 	private function get_old_roles(){
-		return json_decode( get_option( 'war_old_user_roles', array() ) );
+		$old_roles = get_option( 'war_old_user_roles', array() );
+		return ( empty( $old_roles ) ) ? $old_roles : json_decode( $old_roles );
 	}
 
 	/**
