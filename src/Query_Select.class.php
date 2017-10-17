@@ -8,6 +8,7 @@ class Query_Select {
 	private $select;
 	private $table;
 	private $query = array();
+	private $sql_actions = array( 'sum', 'count', 'avg' );
 
 	public function parse_select( $select_array = array(), $table = NULL ){
 		if( empty( $select_array ) ) return $select_array;
@@ -40,21 +41,12 @@ class Query_Select {
 
 		if( sizeof( $select ) <= 1 ) return $select[0];
 
-		if( ! method_exists( $this, $select[0] ) ) throw new \Exception( 'Provided SQL Method does not exists' );
+		if( ! in_array( $select[0], $this->sql_actions ) ) throw new \Exception( 'Provided SQL Method does not exists' );
 
-		return call_user_func_array( [ $this, $select[0] ], [ $select ] );
-
-	}
-
-	private function count( $select ){
-		$q = 'COUNT( ' . $select[1] . ' )';
+		$q = strtoupper( $select[0] ) . '( ' . $select[1] . ' )';
 		if( isset( $select[2] ) ) $q .= ' AS "' . $select[2] . '"';
 		return [ $q ];
+
 	}
 
-	private function sum( $select ){
-		$q = 'SUM( ' . $select[1] . ' )';
-		if( isset( $select[2] ) ) $q .= ' AS "' . $select[2] . '"';
-		return [ $q ];
-	}
 }
