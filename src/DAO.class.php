@@ -150,7 +150,7 @@ class DAO {
 			$this->unset_empty_values();
 			$this->create_table();
 			$this->adjust_table_columns();
-			if( property_exists( $this->request->current_user, 'id' ) )
+			if( property_exists( $this->request, 'current_user' ) && ! empty( $this->request->current_user ) )
 				$this->params->user = $this->request->current_user->id;
 
 			// Implode any arrays in the params
