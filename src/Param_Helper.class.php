@@ -12,8 +12,9 @@ class Param_Helper {
 
 	public function get_read_records_params(){
 		$params = [
+			'select' => 'array',
 			'filter' => 'array',
-			// 'group' => 'array',
+			'group' => 'array',
 			'order' => 'array',
 			'limit' => [
 				'type' => 'integer',
@@ -50,6 +51,7 @@ class Param_Helper {
 
 	public function get_read_record_params(){
 		$params = [
+			'select' => 'array',
 			'sideLoad' => [
 				'type' => 'string',
 				'default' => true,

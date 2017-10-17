@@ -57,6 +57,8 @@ class Query_Assoc {
 		if( empty( $assoc ) || ! isset( $assoc[ 'query' ] ) || ! isset( $assoc[ 'map' ] ) || ! $table || ! $model ) return false;
 
 		if( ! isset( $this->war_db ) ) $this->war_db = War_DB::init();
+		//Remove limit from this version of the query
+		if( isset( $assoc[ 'query' ][ 'limit' ] ) ) unset( $assoc[ 'query' ][ 'limit' ] );
 
 		$result = [
 			'data'   => [],
@@ -115,14 +117,18 @@ class Query_Assoc {
 					$assoc->query->where[] = $model  . '.' . $assoc->map->match . ' IN (' . implode( ',', $match ) . ')';
 				}
 
+				// print_r( $assoc->query );
 				$assoc->data = $this->war_db->select_all( $assoc->query, false );
+				// print_r( $assoc->data );
 			}
 
 			if( empty( $assoc->data ) ) return;
 
-			foreach( $this->data as $i => &$d ){
+			foreach( $this->data as &$d ){
 				$this->map = $assoc->map;
 				$this->search = $d[ $this->map->bind ];
+				if( empty( $this->search ) ) continue;
+
 				$assoc_items = array_filter( $assoc->data, function( $i ){
 					if( $this->map->assoc == 'mm' ) return ( in_array( $this->search, explode( ',', $i[ $this->map->match ] ) ) );
 					return ( $i[ $this->map->match ] === $this->search );
@@ -151,7 +157,7 @@ class Query_Assoc {
 			'where'  => ( isset( $this->side_search[ $model ] ) ) ? $this->side_search[ $model ] : []
 		];
 
-		if( property_exists( $this->params, 'sideLimit' ) )  $query['limit']  = $this->query_search->parse_limit( $this->params->sideLimit );
+		if( property_exists( $this->params, 'sideLimit' ) && $this->params->sideLimit )  $query['limit']  = $this->query_search->parse_limit( $this->params->sideLimit );
 		if( property_exists( $this->params, 'sideOrder' ) )  $query['order']  = $this->query_search->parse_order( $this->params->sideOrder, $model );
 
 		return $query;

@@ -70,13 +70,14 @@ class Query_Search {
 	/**
 	 * $group Array( $string, $string, $string )
 	 **/
-	// public function parse_group(){
-	// 	// sanitize $group values
-	// 	array_walk( $this->params->group, function( $group ){
-	// 		$this->search->group[] = $this->model . '.' . (string)preg_replace( '/[^a-z0-9_]/', '', trim( $group ) );
-	// 	});
-	// 	return $this->search->group;
-	// }
+	public function parse_group( $group = array(), $model = '' ){
+		if( empty( $group ) ) return $group;
+		// sanitize $group values
+		array_walk( $group, function( &$g, $i, $model ){
+			$g = $model . '.' . (string)preg_replace( '/[^a-z0-9_]/', '', trim( $g ) );
+		}, $model );
+		return $group;
+	}
 
 	/**
 	 * $order syntax col:direction
@@ -182,7 +183,8 @@ class Query_Search {
 
 	public function build_order_query( $order, $model = '' ){
 		$o = explode( ':', strtolower( $order ) );
-		$order_by = esc_sql( $model . '.' . trim( $o[0] ) );
+		// $order_by = esc_sql( $model . '.' . trim( $o[0] ) );
+		$order_by = '`' . esc_sql( trim( $o[0] ) ) . '`';
 		if( sizeof( $o ) > 1 ){
 			$d = strtoupper( trim( $o[1] ) );
 			if( in_array( $d, [ 'ASC', 'DESC' ] ) ) $direction = $d;
