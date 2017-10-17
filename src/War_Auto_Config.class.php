@@ -2,7 +2,8 @@
 
 namespace War_Api;
 
-use \War_Api\Security\War_User as War_User;
+use \War_Api\Security\War_User				as War_User;
+use \War_Api\Security\War_User_Roles		as War_User_Roles;
 
 /**
  * These methods should run, well, automatically; at the right time
@@ -21,7 +22,9 @@ class War_Auto_Config {
 	}
 
 	public function set_user_roles(){
-		return true;
+		if( ! property_exists( $this->war_config, 'user_roles' ) ) return;
+		$user_roles = new War_User_Roles;
+		$user_roles->update_roles( $this->war_config->user_roles );
 	}
 
 	public function add_war_object( $war_object ){
@@ -52,4 +55,5 @@ class War_Auto_Config {
 	public function set_api_prefix( $prefix ){
         return $this->war_config->api_prefix;
     }
+
 }
