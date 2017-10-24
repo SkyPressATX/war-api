@@ -31,12 +31,14 @@ class War_Menu {
         $rev_menu = array();
         $cache = array();
         foreach ( $rev_items as $item ) :
+
             $formatted = array(
                 'ID'          => abs( $item->ID ),
                 'order'       => (int) $item->menu_order,
                 'parent'      => abs( $item->menu_item_parent ),
                 'title'       => $item->title,
                 'url'         => $item->url,
+                // 'sref'        => $item->sref,
                 'children'    => array(),
             );
             // Pickup my children
