@@ -18,11 +18,11 @@ class User_Auth {
 
 
 	public function get_user_id(){
-		return ( isset( $this->user_id ) && $this->user_id !== 0 ) ? $this->user_id : false;
+		return ( property_exists( $this, 'user_id' ) && $this->user_id !== 0 ) ? $this->user_id : false;
 	}
 
 	public function get_auth_type(){
-		return ( isset( $this->auth_type ) ) ? $this->auth_type : NULL;
+		return ( property_exists( $this, 'auth_type' ) ) ? $this->auth_type : NULL;
 	}
 
 	private function get_user_id_by_jwt(){
@@ -55,7 +55,7 @@ class User_Auth {
 
 		$verify = wp_verify_nonce( $nonce, 'wp_rest' );
 
-		if( ! $verify || ! is_user_logged_in() ){
+		if( ! $verify ){
 			$this->authed = false;
 			return;
 		}

@@ -138,7 +138,32 @@ class Default_Endpoints {
 	// }
 
 	public function war_get_menu( $data ) {
-		$class = new War_Menu;
-		return $class->war_get_menu();
+
+		$avail_menus = get_nav_menu_locations();
+        $header_menu_slug = $avail_menus["header"];
+
+        $wp_menu = wp_get_nav_menu_object( $header_menu_slug );
+        if( empty($wp_menu) ) return true;
+
+        $menu_items = wp_get_nav_menu_items( $wp_menu->term_id );
+
+		// return $menu_items;
+
+		return $this->process_menu_items( $menu_items );
+	}
+
+	private function process_menu_items( $items ){
+		array_walk( $items, function( &$item ){
+			$url = parse_url( $item->url, PHP_URL_PATH );
+			$url = explode( '/', untrailingslashit( $url ) );
+			$item = array(
+				'title' => $item->title,
+				'href'	=> $item->url,
+				'slug'	=> end( $url ),
+				'sref'	=> $item->object,
+				'id'	=> $item->ID
+			);
+		});
+		return $items;
 	}
 }
