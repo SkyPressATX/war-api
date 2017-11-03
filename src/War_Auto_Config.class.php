@@ -38,7 +38,8 @@ class War_Auto_Config {
 			'category_base' => preg_replace('/\%.+\%/',':slug', get_option( 'category_base' ) ),
 			'api_prefix' => rest_get_url_prefix(),
 			'api_namespace' => $this->war_config->namespace,
-			'user' => $wu->get_war_user()
+			'user' => $wu->get_war_user(),
+			'root' => esc_url_raw( rest_url() )
 		);
 
 		return $war_object;

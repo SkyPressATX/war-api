@@ -67,6 +67,7 @@ class War_Init {
 		add_action( 'rest_api_init', [ $this, 'register_models' ] );
 		add_action( 'wp_enqueue_scripts', [ $this->auto_config, 'war_localize' ] ); // Localize the warObject
 		add_action( 'wp', [ $this->auto_config, 'manage_admin_toolbar' ] ); //Show or Hide the Admin Toolbar
+		add_action( 'send_headers', [ $this, 'enable_cors' ] );
 	}
 
 	public function get_current_user(){
@@ -126,6 +127,19 @@ class War_Init {
 	public function handle_missing_requests( $status_header ){
 		if( preg_match( '/.+\s404\s.+/', $status_header ) ) return 'HTTP/1.1 200 ' . get_status_header_desc( 200 );
 		return $status_header;
+	}
+
+	/**
+	 * Enable CORS on REST API Requests
+	 *
+	 **/
+	public function enable_cors(){
+		if( ! $this->war_config->enable_cors || ! property_exists( $this->war_config, 'enable_cors' ) ) return;
+		// if( ! did_action( 'rest_api_init' ) && $_SERVER[ 'REQUEST_METHOD' ] == 'HEAD' ){
+			header( 'Access-Control-Allow-Origin: *' );
+			header( 'Access-Control-Expose-Headers: Link' );
+			header( 'Access-Control-Allow-Methods: HEAD' );
+		// }
 	}
 
 }
