@@ -48,7 +48,7 @@ class Global_Helpers {
 		if ( is_array ( $x ) ) {
             return implode( ',', $x );
         }
-		return '"' . $x . '"';
+		return $x;
 	}
 
     public function numberfy( $array ){
