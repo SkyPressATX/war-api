@@ -54,6 +54,9 @@ class DAO {
 	 * Read All Items from DB
 	 *
 	 * Get Items, Associated Items, and Info Results
+	 *
+	 * @return Object | Data, Info, Pages
+	 *
 	 **/
 	public function read_all(){
 		try {
@@ -117,7 +120,8 @@ class DAO {
 				$result[ '_pages' ][ 'next_page' ] = ( ($this->params->page + 1) <= $result[ '_pages' ][ 'total_pages' ]  ) ? ($this->params->page + 1) : $result[ '_pages' ][ 'total_pages' ];
 			}
 
-			return $result;
+			return (object)$result;
+
 		} catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );
 		}
@@ -146,7 +150,7 @@ class DAO {
 			$this->unset_empty_values();
 			$this->create_table();
 			$this->adjust_table_columns();
-			if( property_exists( $this->request->current_user, 'id' ) )
+			if( property_exists( $this->request, 'current_user' ) && ! empty( $this->request->current_user ) )
 				$this->params->user = $this->request->current_user->id;
 
 			// Implode any arrays in the params
