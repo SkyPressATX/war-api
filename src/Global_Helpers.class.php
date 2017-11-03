@@ -46,9 +46,10 @@ class Global_Helpers {
 		if ( empty( $x ) ) return 'NULL';
 		if ( is_numeric( $x ) ) return $x;
 		if ( is_array ( $x ) ) {
-            return implode( ',', $x );
+		    $imploded_array = implode( ',', $x );
+            return '"' . $imploded_array . '"';
         }
-		return $x;
+		return '"' . $x . '"';
 	}
 
     public function numberfy( $array ){

@@ -176,13 +176,7 @@ class Query_Builder {
 		$query = 'UPDATE ' . $query_map->table;
 
 		array_walk( $query_map->data, function( &$d, $key ){
-            $modified_val = $this->help->quote_it( esc_sql( $d ) );
-            if ( is_numeric( $modified_val ) ) {
-                $d = '`' . $key . '` = ' . $modified_val;
-            } else {
-                $d = '`' . $key . '` = "' . $modified_val . '"';
-            }
-
+			$d = '`' . $key . '` = ' . $this->help->quote_it( esc_sql( $d ) );
 		});
 		$query .= ' SET ' . implode( ', ', $query_map->data );
 
