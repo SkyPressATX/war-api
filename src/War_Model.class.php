@@ -96,9 +96,9 @@ class War_Model {
 			$dao = new DAO( $db_info, $this->model, $request, $this->war_config );
 			$response = $dao->read_all();
 
-			if( isset( $this->model->pre_return ) ){
-				if( empty( $response['data'] ) ) return apply_filters( 'war_pre_return_' . $this->model->name, $response->data );
-				array_walk( $response['data'], function( &$item ){
+			if( property_exists( $this->model, 'pre_return ' ) ){
+				if( empty( $response->data ) ) return apply_filters( 'war_pre_return_' . $this->model->name, $response->data );
+				array_walk( $response->data, function( &$item ){
 					$item = apply_filters( 'war_pre_return_' . $this->model->name, $item );
 				});
 			}
