@@ -52,11 +52,11 @@ class War_User {
 
 		if( empty( $this->current_user ) || ! is_user_logged_in() ) return $this->war_user;
 
-		$this->war_user = array_merge( $ths->war_user, [
+		$this->war_user = array_merge( $this->war_user, [
 			'id' => $this->current_user->get( 'ID' ),
 			'email' => $this->current_user->get( 'user_email' ),
 			'roles' => $this->current_user->roles
 		]);
-		$this->war_user->caps = array_keys( array_filter( $this->current_user->allcaps ) );
+		$this->war_user['caps'] = array_keys( array_filter( $this->current_user->allcaps ) );
 	}
 }
