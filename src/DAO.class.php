@@ -2,11 +2,12 @@
 
 namespace War_Api\Data;
 
-use War_Api\Data\Query_Search as Query_Search;
-use War_Api\Helpers\Global_Helpers as Global_Helpers;
-use War_Api\Data\Query_Assoc as Query_Assoc;
-use War_Api\Data\Query_Builder as Query_Builder;
-use War_Api\Data\War_DB as War_DB;
+use War_Api\Data\Query_Search					as Query_Search;
+use War_Api\Data\Query_Select					as Query_Select;
+use War_Api\Helpers\Global_Helpers				as Global_Helpers;
+use War_Api\Data\Query_Assoc					as Query_Assoc;
+use War_Api\Data\Query_Builder					as Query_Builder;
+use War_Api\Data\War_DB							as War_DB;
 
 class DAO {
 
@@ -14,6 +15,7 @@ class DAO {
 	 * Start with Other Classes
 	 **/
 	private $query_search;
+	private $query_select;
 	private $query_builder;
 	private $query_assoc;
 	private $help;
@@ -44,6 +46,7 @@ class DAO {
 		$this->url_id_param = $this->get_url_id_param();
 
 		$this->query_search = new Query_Search;
+		$this->query_select = new Query_Select;
 		$this->help = new Global_Helpers;
 		if( property_exists( $this->model, 'assoc' ) )
 			$this->query_assoc = new Query_Assoc( $this->model->assoc, $this->params, $this->table_prefix );
@@ -68,14 +71,22 @@ class DAO {
 
 			//Build war_db select_all() params
 			$this->query_map[ 'query' ] = [
-				'select' => ( property_exists( $this->params, 'select' ) ) ? $this->params->select : [],
+				// 'select' => ( property_exists( $this->params, 'select' ) ) ? $this->params->select : [],
+				'select' => $this->query_select->parse_select( $this->params->select, $this->table ),
 				'table'  => $this->table,
 				'where'  => $this->query_search->parse_filters( $this->params->filter, $this->table ),
 				'limit'  => $this->query_search->parse_limit( $this->params->limit ),
 				// 'order'  => $this->query_search->parse_order( $this->params->order, $table ),
 				'offset' => $this->query_search->parse_page( $this->params->page, $this->params->limit )
 			];
-			if( property_exists( $this->params, 'order' ) ) $this->query_map[ 'query' ][ 'order' ] = $this->query_search->parse_order( $this->params->order, $this->table );
+
+			/** Use Grouping if appropriate **/
+			if( property_exists( $this->params, 'group' ) && property_exists( $this->params, 'select' ) )
+				$this->query_map[ 'query' ][ 'group' ] = $this->query_search->parse_group( $this->params->group, $this->table );
+
+			/** Use Order By if appropriate **/
+			if( property_exists( $this->params, 'order' ) )
+				$this->query_map[ 'query' ][ 'order' ] = $this->query_search->parse_order( $this->params->order, $this->table );
 
 			// Lets look for any assoc queries that have a where statement. Pull that data first
 			if( isset( $this->query_map[ 'assoc' ] ) ){
@@ -95,6 +106,7 @@ class DAO {
 			$total[ 'select' ] = 'COUNT(' . $this->table . '.' . $this->url_id_param . ')';
 			unset( $total[ 'limit' ] );
 			unset( $total[ 'offset' ] );
+			unset( $total[ 'group' ] );
 
 			$data = $this->war_db->select_all( $this->query_map[ 'query' ] );
 

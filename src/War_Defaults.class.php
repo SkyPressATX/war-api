@@ -31,7 +31,8 @@ class War_Defaults {
 			'sideLimit' => 10,
 			'filter_sideSearch_results' => false,
 			'max_limit' => 100,
-			'url_id_param' => [ 'id', '\d+' ]
+			'url_id_param' => [ 'id', '\d+' ],
+			'enable_cors' => false
         ];
 	}
 
