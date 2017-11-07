@@ -22,7 +22,7 @@ class War_User {
 		$this->get_authed_user(); //Get an authorized user either through JWT or Cookie
 		$this->set_authed_user(); //Set current user for the rest of WordPress
 		$this->set_war_user(); //Build a WAR User object (strip out private data)
-		return $this->war_user;
+		return (object)$this->war_user;
 	}
 
 	private function get_authed_user(){
@@ -33,7 +33,7 @@ class War_User {
 
 
 	private function set_authed_user(){
-		if( ! isset( $this->user_id ) || $this->user_id == 0 ) return;
+		if( ! isset( $this->user_id ) ) return;
 
 		wp_set_current_user( $this->user_id );
 		$this->current_user = wp_get_current_user();
@@ -46,16 +46,17 @@ class War_User {
 	 * We Don't need everyting, just specific items from the WP_User Object.
 	 **/
 	private function set_war_user(){
-		// print_r( $this->current_user );
-		// var_dump( is_user_logged_in() );
-		if( empty( $this->current_user ) || ! is_user_logged_in() ) return [];
+		$this->war_user = [
+			'auth'	=> $this->auth_by
+		];
 
-		$this->war_user = (object)[
+		if( empty( $this->current_user ) || ! is_user_logged_in() ) return $this->war_user;
+
+		$this->war_user = array_merge( $this->war_user, [
 			'id' => $this->current_user->get( 'ID' ),
 			'email' => $this->current_user->get( 'user_email' ),
-			'roles' => $this->current_user->roles,
-			'auth' => $this->auth_by
-		];
-		$this->war_user->caps = array_keys( array_filter( $this->current_user->allcaps ) );
+			'roles' => $this->current_user->roles
+		]);
+		$this->war_user['caps'] = array_keys( array_filter( $this->current_user->allcaps ) );
 	}
 }
