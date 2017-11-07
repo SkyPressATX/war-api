@@ -43,8 +43,12 @@ class Global_Helpers {
     }
 
 	public function quote_it( $x ){
-		if( empty( $x ) ) return 'NULL';
-		if( is_numeric( $x ) ) return $x;
+		if ( empty( $x ) ) return 'NULL';
+		if ( is_numeric( $x ) ) return $x;
+		if ( is_array ( $x ) ) {
+		    $imploded_array = implode( ',', $x );
+            return '"' . $imploded_array . '"';
+        }
 		return '"' . $x . '"';
 	}
 
