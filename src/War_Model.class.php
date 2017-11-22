@@ -215,9 +215,10 @@ class War_Model {
 
 	private function prep_schema(){
 		// unset validate_callback and sanitize_callback from each param
-		array_walk( $this->model->params, function( &$param ){
+		array_walk( $this->model->params, function( &$param, $key ){
 			unset( $param[ 'validate_callback' ] );
 			unset( $param[ 'sanitize_callback' ] );
+			$param[ 'name' ] = $key;
 		});
 		if( property_exists( $this->model, 'db_info' ) ) unset( $this->model->db_info );
 		if( isset( $this->model->pre_data ) ) unset( $this->model->pre_data );
