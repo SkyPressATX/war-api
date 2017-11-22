@@ -37,6 +37,10 @@ class Param_Helper {
 			'_info' => [
 				'type' => 'bool',
 				'default' => true
+			],
+			'_map' => [
+				'type' => 'bool',
+				'default' => 'true'
 			]
 		];
 
@@ -60,6 +64,12 @@ class Param_Helper {
 			'sideSearch' => [
 				'type' => 'array',
 				'sanitize_callback' => $this->sanitize_side_search()
+			],
+			'_info' => [
+				'type' => 'bool'
+			],
+			'_map' => [
+				'type' => 'bool'
 			]
 		];
 

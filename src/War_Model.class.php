@@ -33,6 +33,8 @@ class War_Model {
 		if( ! property_exists( $this->model, 'callback' ) ) $this->model->callback = [];
 		$this->model->callback = (object)$this->model->callback;
 		$this->model_endpoints = $this->create_model_endpoints();
+		if( property_exists( $this->model, 'params' ) )
+			$this->model->params = $this->param_helper->process_args( $this->model->params );
 
 		array_walk( $this->model_endpoints, function( $end ){
 			if( $end[ 'callback' ] === FALSE ) return;
@@ -102,7 +104,6 @@ class War_Model {
 					$item = apply_filters( 'war_pre_return_' . $this->model->name, $item );
 				});
 			}
-
 			return $response;
 		}catch( \Exception $e ){
 			throw new \Exception( $e->getMessage() );

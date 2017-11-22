@@ -28,6 +28,7 @@ class DAO {
 	private $table_prefix;
 	private $query_map;
 	private $url_id_param;
+	private $default_model_params;
 
 	public function __construct( $db_info = array(), $model = array(), $request = array(), $war_config = array() ){
 		try {
@@ -44,6 +45,7 @@ class DAO {
 		$this->table_prefix = $this->get_table_prefix( $db_info );
 		$this->table = esc_sql( $this->table_prefix . $this->model->name );
 		$this->url_id_param = $this->get_url_id_param();
+		$this->default_model_params = $this->get_default_model_params();
 
 		$this->query_search = new Query_Search;
 		$this->query_select = new Query_Select;
@@ -64,6 +66,7 @@ class DAO {
 	public function read_all(){
 		try {
 			$this->add_current_user_to_filter();
+			$this->create_table();
 			$this->query_map = [];
 
 			if( property_exists( $this->model, 'assoc' ) && ! empty( $this->model->assoc ) )
@@ -114,24 +117,29 @@ class DAO {
 			if( property_exists( $this->params, 'sideSearch' ) || $this->params->sideLoad !== false && ! empty( $this->query_map[ 'assoc' ] ) )
 				$data = $this->query_assoc->append_assoc_data( $this->query_map[ 'assoc' ], $data );
 
-			if( ! $this->params->_info ) return $data;
-
-			$result = [
-				'data' => $data,
-				'_info' => [
-					'total' => $this->war_db->select_one( $total )
-				],
-				'_pages' => [
-					'current_page' => ( property_exists( $this->params, 'page' ) ) ? $this->params->page : NULL
-				]
-			];
+			$result = [ 'data' => $data ];
+			if( $this->params->_info ){
+				$result[ '_info' ]	= [ 'total' => $this->war_db->select_one( $total ) ];
+				$result[ '_pages' ]	= [ 'current_page' => ( property_exists( $this->params, 'page' ) ) ? $this->params->page : NULL ];
+			}
+			if( $this->params->_map ){
+				$result[ '_map' ] = $this->model;
+				unset( $result[ '_map' ]->callback );
+				if( isset( $result[ '_map' ]->db_info ) ) unset( $result[ '_map' ]->db_info );
+				$result[ '_map' ]->url_id_param = ( isset( $result[ '_map']->url_id_param ) ) ? $result[ '_map' ]->url_id_param[0] : $this->war_config->url_id_param[0];
+				if( isset( $result[ '_map' ]->params ) )
+					array_walk( $result[ '_map' ]->params, function( &$p, $k ){
+						$p[ 'name' ] = $k;
+						unset( $p['sanitize_callback'] );
+						unset( $p['validate_callback'] );
+					});
+			}
 
 			if( $result[ '_info' ][ 'total' ] > 0 ){
 				$result[ '_info' ][ 'count' ]  = ( $result[ '_info' ][ 'total' ]  < $this->params->limit ) ? $result[ '_info' ][ 'total' ]  : $this->params->limit;
 				$result[ '_pages' ][ 'total_pages' ]  = ( (integer)ceil( $result[ '_info' ][ 'total' ] / $this->params->limit ) );
 				$result[ '_pages' ][ 'next_page' ] = ( ($this->params->page + 1) <= $result[ '_pages' ][ 'total_pages' ]  ) ? ($this->params->page + 1) : $result[ '_pages' ][ 'total_pages' ];
 			}
-
 			return (object)$result;
 
 		} catch( \Exception $e ){
@@ -162,7 +170,8 @@ class DAO {
 			$this->unset_empty_values();
 			$this->create_table();
 			$this->adjust_table_columns();
-			if( property_exists( $this->request, 'current_user' ) && ! empty( $this->request->current_user ) )
+
+			if( property_exists( $this->request, 'current_user' ) && ! empty( $this->request->current_user ) && in_array( 'user', $this->default_model_params ) )
 				$this->params->user = $this->request->current_user->id;
 
 			// Implode any arrays in the params
@@ -231,9 +240,10 @@ class DAO {
 		$create_map = [
 			'table'   => $this->table,
 			'data'    => $this->query_search->parse_sql_types( array_keys( $this->model->params ), $this->model->params ),
-			'primary' => $this->query_search->parse_primary_key( $this->model->params ),
-			'keys'    => [ '`id`' ]
+			'primary' => $this->query_search->parse_primary_key( $this->model->params )
 		];
+
+		if( in_array( 'id', $this->default_model_params ) ) $create_map[ 'keys' ] = ['`id`'];
 
 		if( property_exists( $this->model, 'assoc' ) ){
 			foreach( $this->model->assoc as $model => $map ){
@@ -249,7 +259,7 @@ class DAO {
 
 	private function adjust_table_columns(){
 		//Get our columns to compare against
-		$model_col   = array_merge( [ 'id', 'created_on', 'updated_on', 'user' ], array_keys( (array)$this->model->params ) );
+		$model_col   = array_merge( $this->default_model_params, array_keys( (array)$this->model->params ) );
 		$current_col_map = [
 			'select' => '`COLUMN_NAME`',
 			'table'  => 'INFORMATION_SCHEMA.COLUMNS',
@@ -272,7 +282,11 @@ class DAO {
 		}
 
 		if( ! empty( $add_columns ) ){
-			$add_columns = $this->query_search->parse_sql_types( $add_columns, $this->model->params );
+			$defaults_to_add = array_filter( $add_columns, function( $p ){
+				return in_array( $p, $this->default_model_params );
+			});
+			$params_to_add = array_values( array_diff( $add_columns, $defaults_to_add ) );
+			$add_columns = array_merge( $this->query_search->parse_sql_types( $params_to_add, $this->model->params ), $this->default_table_columns( $defaults_to_add ) );
 			array_walk( $add_columns, function( &$col ){
 				$col = 'ADD ' . $col;
 			});
@@ -335,13 +349,26 @@ class DAO {
 	 *
 	 * @return Array
 	 */
-	private function default_table_columns(){
-		return array(
-			'`id` MEDIUMINT NOT NULL AUTO_INCREMENT',
-			'`created_on` datetime DEFAULT CURRENT_TIMESTAMP',
-			'`updated_on` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
-			'`user` MEDIUMINT NOT NULL'
-		);
+	private function default_table_columns( $default_params = [] ){
+		if( empty( $default_params ) ) $default_params = $this->default_model_params;
+		$defaults_parsed = [];
+		foreach( $default_params as $param ){
+			if( $param === 'id' )			$defaults_parsed[] = '`id` MEDIUMINT NOT NULL AUTO_INCREMENT';
+			if( $param === 'created_on' )	$defaults_parsed[] = '`created_on` datetime DEFAULT CURRENT_TIMESTAMP';
+			if( $param === 'updated_on' )	$defaults_parsed[] = '`updated_on` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
+			if( $param === 'user' )			$defaults_parsed[] = '`user` MEDIUMINT NOT NULL';
+		}
+		return $defaults_parsed;
+	}
+
+	/**
+	 * Parse either Model Map or WAR Config
+	 *
+	 * @return Array[ string ]
+	 **/
+	private function get_default_model_params(){
+		if( isset( $this->model->default_params ) ) return $this->model->default_params;
+		return $this->war_config->default_model_params;
 	}
 
 }
