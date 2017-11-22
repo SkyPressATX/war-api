@@ -75,7 +75,7 @@ class DAO {
 			//Build war_db select_all() params
 			$this->query_map[ 'query' ] = [
 				// 'select' => ( property_exists( $this->params, 'select' ) ) ? $this->params->select : [],
-				'select' => $this->query_select->parse_select( $this->params->select, $this->table ),
+				'select' => ( property_exists( $this->params, 'select' ) ) ? $this->query_select->parse_select( $this->params->select, $this->table ) : [],
 				'table'  => $this->table,
 				'where'  => $this->query_search->parse_filters( $this->params->filter, $this->table ),
 				'limit'  => $this->query_search->parse_limit( $this->params->limit ),
@@ -317,6 +317,8 @@ class DAO {
 
 	private function add_current_user_to_filter(){
 		if( ! $this->isolate ) return;
+
+		if( ! property_exists( $this->request->current_user, 'id' ) ) $this->request->current_user->id = 0;
 
 		if( empty( $this->params ) ) $this->params = [ 'filter' => [] ];
 		$this->params->filter[] =  'user:eq:' . $this->request->current_user->id;
