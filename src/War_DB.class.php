@@ -42,16 +42,19 @@ use War_Api\Helpers\Global_Helpers as Global_Helpers;
 class War_DB {
 
 	private $db;
-	private $db_info;
+	public $db_info;
 	private $query_builder;
 	private $help;
 	private $safe_table = [];
 
 	private static $instance = null;
+	private static $db_host;
 
 	private function __construct( $db_info = false ){
 		// Set passed $db connection or default to WP DB connection
 		$this->db_info = ( ! $db_info || empty( $db_info ) || ! is_array( $db_info ) ) ? $this->get_wp_db_info() : $db_info;
+		// Set db_host for future checking
+		self::$db_host = $this->db_info[ 'db_host' ];
 		// Create MySQL Connection
 		$this->db = $this->connect_to_mysql();
 
@@ -63,12 +66,8 @@ class War_DB {
 	//Initialize the War_DB Class
 	public static function init( $db_info = false ){
 		if( self::$instance === null ) self::$instance = new War_DB( $db_info );
+		if( $db_info && $db_info[ 'db_host' ] !== self::$db_host ) self::$instance = new War_DB( $db_info );
 		return self::$instance;
-	}
-
-	//Create a new instance of War_DB, even if one exists
-	public function new_db( $db_info = false ){
-		return new War_DB( $db_info );
 	}
 
 	// Check if a table already exists

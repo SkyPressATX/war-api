@@ -32,7 +32,8 @@ class War_Defaults {
 			'filter_sideSearch_results' => false,
 			'max_limit' => 100,
 			'url_id_param' => [ 'id', '\d+' ],
-			'enable_cors' => false
+			'enable_cors' => false,
+			'default_model_params' => [ 'id', 'created_on', 'updated_on', 'user' ]
         ];
 	}
 
