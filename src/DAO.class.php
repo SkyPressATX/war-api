@@ -352,7 +352,7 @@ class DAO {
 	 * @return Array
 	 */
 	private function default_table_columns( $default_params = [] ){
-		if( empty( $default_params ) ) $default_params = $this->default_model_params;
+		if( empty( $default_params ) ) return [];
 		$defaults_parsed = [];
 		foreach( $default_params as $param ){
 			if( $param === 'id' )			$defaults_parsed[] = '`id` MEDIUMINT NOT NULL AUTO_INCREMENT';
