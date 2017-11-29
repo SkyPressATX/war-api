@@ -50,10 +50,9 @@ class Query_Search {
 		if( empty( $params ) || empty( $param_map ) ) return array();
 		$this->param_map = $param_map;
 		array_walk( $params, function( &$param ){
-			$type = ( isset( $this->param_map[ $param ] ) ) ? $this->param_map[ $param ] : $param;
+			$type = ( isset( $this->param_map[ $param ] ) ) ? $this->param_map[ $param ][ 'type' ] : $param;
 			$param = '`' . $param .'` ' . $this->help->sql_data_type( $type );
 		});
-
 		return $params;
 	}
 
