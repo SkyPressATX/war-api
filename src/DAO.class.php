@@ -252,7 +252,7 @@ class DAO {
 			}
 		}
 
-		$create_map[ 'data' ] = array_merge( $this->default_table_columns(), $create_map[ 'data' ] );
+		$create_map[ 'data' ] = array_merge( $this->default_table_columns( $this->default_model_params ), $create_map[ 'data' ] );
 
 		return $this->war_db->create_table( $create_map );
 	}
